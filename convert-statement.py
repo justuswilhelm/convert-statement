@@ -36,8 +36,14 @@ def parse_dkb_row(row):
 
 
 def parse_shinsei_row(row):
-    row['CR'] = int(row['CR'] or 0)
-    row['DR'] = int(row['DR'] or 0)
+    if 'CR' in row:
+        row['CR'] = int(row['CR'] or 0)
+        row['DR'] = int(row['DR'] or 0)
+    else:
+        row['DR'] = int(row['お支払金額'] or 0)
+        row['CR'] = int(row['お預り金額'] or 0)
+        row['Value Date'] = row['取引日']
+        row['Description'] = row['摘要']
     return row
 
 
