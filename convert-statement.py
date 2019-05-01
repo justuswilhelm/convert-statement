@@ -90,7 +90,11 @@ def convert_cc(csv_path):
         'Betrag (EUR)': 'Inflow',
         'Beschreibung': 'Memo',
     }
-    df = read_csv(csv_path, parse_dkb_row)
+    try:
+        df = read_csv(csv_path, parse_dkb_row)
+    except KeyError:
+        print("New DKB CC format")
+        df = read_csv(csv_path, parse_dkb_row, skip=7)
     df_ynab = make_ynab(df, cc_fields)
     df_ynab['Payee'] = df_ynab['Memo']
     return df_ynab
