@@ -1,4 +1,5 @@
 #!/usr/bin/env python3
+"""Parse DKB and Shinsei bank statements and make them YNAB compatible."""
 from argparse import ArgumentParser
 from csv import DictReader
 from datetime import datetime
@@ -10,6 +11,7 @@ import pandas as pd
 
 
 def make_ynab(df, mapping, create_negative_rows=True):
+    """Make YNAB compatible dataframe."""
     df = df[list(mapping.keys())]
     df = df.rename(mapping, axis=1)
     df = df.set_index('Date')
@@ -22,6 +24,7 @@ def make_ynab(df, mapping, create_negative_rows=True):
 
 
 def parse_dkb_row(row):
+    """Parse dates and numerical values in DKB data."""
     row['Wertstellung'] = datetime.strptime(
         row['Wertstellung'],
         "%d.%m.%Y",
@@ -36,6 +39,7 @@ def parse_dkb_row(row):
 
 
 def parse_shinsei_row(row):
+    """Parse numerical values in Shinsei data."""
     if 'CR' in row:
         row['CR'] = int(row['CR'] or 0)
         row['DR'] = int(row['DR'] or 0)
@@ -48,6 +52,7 @@ def parse_shinsei_row(row):
 
 
 def read_csv(csv_path, row_fn, encoding, delimiter, skip):
+    """Read a CSV file."""
     with open(csv_path, encoding=encoding) as fd:
         for _ in range(skip):
             fd.readline()
@@ -57,6 +62,7 @@ def read_csv(csv_path, row_fn, encoding, delimiter, skip):
 
 
 def convert_shinsei(csv_path):
+    """Convert Shinsei checkings account statement."""
     fields = {
         'Value Date': 'Date',
         'DR': 'Outflow',
@@ -74,6 +80,7 @@ def convert_shinsei(csv_path):
 
 
 def convert_giro(csv_path):
+    """Convert DKB giro account statement."""
     giro_fields = {
         'Wertstellung': 'Date',
         'Betrag (EUR)': 'Inflow',
@@ -91,6 +98,7 @@ def convert_giro(csv_path):
 
 
 def convert_cc(csv_path):
+    """Convert DKB credit card statement."""
     cc_fields = {
         'Wertstellung': 'Date',
         'Betrag (EUR)': 'Inflow',
@@ -119,6 +127,7 @@ def convert_cc(csv_path):
 
 
 def get_output_path(file_path, in_dir, out_dir):
+    """Get an output path in the output directory."""
     return path.join(
         out_dir,
         path.relpath(file_path, in_dir),
@@ -126,6 +135,7 @@ def get_output_path(file_path, in_dir, out_dir):
 
 
 def main(kwargs):
+    """Go through files in input folder and transform CSV files."""
     in_glob = path.join(kwargs['in-dir'], '*/*.csv')
     print("Looking for files matching", in_glob)
 
