@@ -47,7 +47,7 @@ def parse_shinsei_row(row):
     return row
 
 
-def read_csv(csv_path, row_fn, encoding='latin_1', skip=6, delimiter=';'):
+def read_csv(csv_path, row_fn, encoding, delimiter, skip):
     with open(csv_path, encoding=encoding) as fd:
         for _ in range(skip):
             fd.readline()
@@ -67,8 +67,8 @@ def convert_shinsei(csv_path):
         csv_path,
         parse_shinsei_row,
         encoding='utf-16',
-        skip=8,
         delimiter='\t',
+        skip=8,
     )
     return make_ynab(df, fields, create_negative_rows=False)
 
@@ -80,7 +80,13 @@ def convert_giro(csv_path):
         'Verwendungszweck': 'Memo',
         'Auftraggeber / Begünstigter': 'Payee',
     }
-    df = read_csv(csv_path, parse_dkb_row)
+    df = read_csv(
+        csv_path,
+        parse_dkb_row,
+        encoding='latin_1',
+        delimiter=';',
+        skip=6,
+    )
     return make_ynab(df, giro_fields)
 
 
@@ -91,10 +97,22 @@ def convert_cc(csv_path):
         'Beschreibung': 'Memo',
     }
     try:
-        df = read_csv(csv_path, parse_dkb_row)
+        df = read_csv(
+            csv_path,
+            parse_dkb_row,
+            delimiter=';',
+            encoding='latin_1',
+            skip=6,
+        )
     except KeyError:
         print("New DKB CC format")
-        df = read_csv(csv_path, parse_dkb_row, skip=7)
+        df = read_csv(
+            csv_path,
+            parse_dkb_row,
+            delimiter=';',
+            encoding='latin_1',
+            skip=7,
+        )
     df_ynab = make_ynab(df, cc_fields)
     df_ynab['Payee'] = df_ynab['Memo']
     return df_ynab
