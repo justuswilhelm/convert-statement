@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 """Parse DKB and Shinsei bank statements and make them YNAB compatible."""
+import logging
 from argparse import ArgumentParser
 from csv import DictReader
 from datetime import datetime
@@ -8,6 +9,10 @@ from glob import glob
 from os import makedirs, path
 
 import pandas as pd
+
+
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
 
 
 def make_ynab(df, mapping, create_negative_rows=True):
@@ -113,7 +118,7 @@ def convert_cc(csv_path):
             skip=6,
         )
     except KeyError:
-        print("New DKB CC format")
+        logging.warning("Encountered new DKB format in %s", csv_path)
         df = read_csv(
             csv_path,
             parse_dkb_row,
@@ -137,10 +142,10 @@ def get_output_path(file_path, in_dir, out_dir):
 def main(kwargs):
     """Go through files in input folder and transform CSV files."""
     in_glob = path.join(kwargs['in-dir'], '*/*.csv')
-    print("Looking for files matching", in_glob)
+    logging.debug("Looking for files matching glob '%s'", in_glob)
 
     for csv_path in glob(in_glob, recursive=True):
-        print("Handling", csv_path)
+        logging.info("Handling file '%s'", csv_path)
         mapping = {
             'shinsei': convert_shinsei,
             'dkb_cc': convert_cc,
@@ -159,7 +164,9 @@ def main(kwargs):
             kwargs['out-dir'],
         )
         makedirs(path.dirname(out_path), exist_ok=True)
+        logging.info("Writing results to '%s'", out_path)
         output.to_csv(out_path)
+    logging.info("Finished")
 
 
 if __name__ == "__main__":
