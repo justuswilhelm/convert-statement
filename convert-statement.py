@@ -58,10 +58,15 @@ def parse_shinsei_row(row):
 
 def parse_new_shinsei_row(row):
     """Parse numerical values in new Shinsei data."""
-    row['DR'] = int(row['出金金額'] or 0)
-    row['CR'] = int(row['入金金額'] or 0)
-    row['Value Date'] = row['取引日']
-    row['Description'] = row['摘要']
+    try:
+        row['DR'] = int(row['出金金額'] or 0)
+        row['CR'] = int(row['入金金額'] or 0)
+        row['Value Date'] = row['取引日']
+        row['Description'] = row['摘要']
+    # English Version!
+    except KeyError:
+        row['DR'] = int(row['Debit'] or 0)
+        row['CR'] = int(row['Credit'] or 0)
     return row
 
 
