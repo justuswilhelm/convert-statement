@@ -34,6 +34,16 @@ def parse_dkb_row(row):
         row['Wertstellung'],
         "%d.%m.%Y",
     )
+    if 'Belegdatum' in row:
+        row['Belegdatum'] = datetime.strptime(
+            row['Belegdatum'],
+            "%d.%m.%Y",
+        )
+    if 'Buchungstag' in row:
+        row['Buchungstag'] = datetime.strptime(
+            row['Buchungstag'],
+            "%d.%m.%Y",
+        )
     row['Betrag (EUR)'] = Decimal(
         row['Betrag (EUR)'].replace(
             '.', ''
@@ -137,7 +147,7 @@ def convert_giro(csv_path):
 def convert_cc(csv_path):
     """Convert DKB credit card statement."""
     cc_fields = {
-        'Wertstellung': 'Date',
+        'Belegdatum': 'Date',
         'Betrag (EUR)': 'Inflow',
         'Beschreibung': 'Memo',
     }
