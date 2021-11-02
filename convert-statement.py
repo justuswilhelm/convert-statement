@@ -80,6 +80,20 @@ def parse_new_shinsei_row(row):
     return row
 
 
+def parse_new_shinsei_row_v2(row):
+    """Parse numerical values in new Shinsei v2 data."""
+    try:
+        row['DR'] = int(row['出金金額'] or 0)
+        row['CR'] = int(row['入金金額'] or 0)
+        row['Value Date'] = row['取引日']
+        row['Description'] = row['摘要']
+    # English Version!
+    except KeyError:
+        row['DR'] = int(row['Debit'] or 0)
+        row['CR'] = int(row['Credit'] or 0)
+    return row
+
+
 def read_csv(csv_path, row_fn, encoding, delimiter, skip):
     """Read a CSV file."""
     with open(csv_path, encoding=encoding) as fd:
@@ -120,6 +134,24 @@ def convert_shinsei_new(csv_path):
         csv_path,
         parse_new_shinsei_row,
         encoding='shift-jis',
+        delimiter=',',
+        skip=0,
+    )
+    return make_ynab(df, fields, create_negative_rows=False)
+
+
+def convert_shinsei_new_v2(csv_path):
+    """Convert new Shinsei checkings account statement."""
+    fields = {
+        'Value Date': 'Date',
+        'DR': 'Outflow',
+        'CR': 'Inflow',
+        'Description': 'Memo',
+    }
+    df = read_csv(
+        csv_path,
+        parse_new_shinsei_row_v2,
+        encoding='utf-8-sig',
         delimiter=',',
         skip=0,
     )
@@ -190,6 +222,7 @@ def main(kwargs):
         logging.info("Handling file '%s'", csv_path)
         mapping = {
             # shinsei_new comes before shinsei, on purpose
+            'shinsei_new_v2': convert_shinsei_new_v2,
             'shinsei_new': convert_shinsei_new,
             'shinsei': convert_shinsei,
             'dkb_cc': convert_cc,
