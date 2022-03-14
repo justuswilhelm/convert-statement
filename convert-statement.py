@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Parse DKB and Shinsei bank statements and make them YNAB compatible."""
+"""Parse DKB, Shinsei, SMBC bank statements and make them YNAB compatible."""
 import logging
 from argparse import ArgumentParser
 from csv import DictReader
@@ -94,6 +94,13 @@ def parse_new_shinsei_row_v2(row):
     return row
 
 
+def parse_smbc_row(row):
+    """Parse numerical values in a SMBC data row."""
+    row['お引出し'] = -int(row['お引出し'] or 0)
+    row['お預入れ'] = int(row['お預入れ'] or 0)
+    return row
+
+
 def read_csv(csv_path, row_fn, encoding, delimiter, skip):
     """Read a CSV file."""
     with open(csv_path, encoding=encoding) as fd:
@@ -153,6 +160,24 @@ def convert_shinsei_new_v2(csv_path):
         parse_new_shinsei_row_v2,
         encoding='utf-8-sig',
         delimiter=',',
+        skip=0,
+    )
+    return make_ynab(df, fields, create_negative_rows=False)
+
+
+def convert_smbc(csv_path):
+    """Convert SMBC checkings account statement."""
+    fields = {
+        '年月日': 'Date',
+        'お引出し': 'Outflow',
+        'お預入れ': 'Inflow',
+        'お取り扱い内容': "Memo",
+    }
+    df = read_csv(
+        csv_path,
+        parse_smbc_row,
+        encoding='shift-jis',
+        delimiter=",",
         skip=0,
     )
     return make_ynab(df, fields, create_negative_rows=False)
@@ -227,6 +252,7 @@ def main(kwargs):
             'shinsei': convert_shinsei,
             'dkb_cc': convert_cc,
             'dkb_giro': convert_giro,
+            'smbc': convert_smbc,
         }
         for k, fn in mapping.items():
             if k in csv_path:
