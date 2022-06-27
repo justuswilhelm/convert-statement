@@ -101,6 +101,13 @@ def parse_smbc_row(row):
     return row
 
 
+def parse_rakuten_row(row):
+    """Parse numerical values in a Rakuten data row."""
+    row['取引日'] = datetime.strptime(row['取引日'], "%Y%m%d")
+    row['入出金(円)'] = int(row['入出金(円)'])
+    return row
+
+
 def read_csv(csv_path, row_fn, encoding, delimiter, skip):
     """Read a CSV file."""
     with open(csv_path, encoding=encoding) as fd:
@@ -183,6 +190,23 @@ def convert_smbc(csv_path):
     return make_ynab(df, fields, create_negative_rows=False)
 
 
+def convert_rakuten(csv_path):
+    """Convert Rakuten checkings account statement."""
+    fields = {
+        '取引日': 'Date',
+        '入出金(円)': 'Inflow',
+        '入出金先内容': 'Memo',
+    }
+    df = read_csv(
+        csv_path,
+        parse_rakuten_row,
+        encoding='shift-jis',
+        delimiter=",",
+        skip=0,
+    )
+    return make_ynab(df, fields, create_negative_rows=True)
+
+
 def convert_giro(csv_path):
     """Convert DKB giro account statement."""
     giro_fields = {
@@ -252,6 +276,7 @@ def main(kwargs):
             'shinsei': convert_shinsei,
             'dkb_cc': convert_cc,
             'dkb_giro': convert_giro,
+            'rakuten': convert_rakuten,
             'smbc': convert_smbc,
         }
         for k, fn in mapping.items():
