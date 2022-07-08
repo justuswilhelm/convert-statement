@@ -101,6 +101,13 @@ def parse_smbc_row(row):
     return row
 
 
+def parse_new_smbc_row(row):
+    """Parse numerical values in a SMBC data row."""
+    row['お引出し'] = int(row['お引出し'] or 0)
+    row['お預入れ'] = int(row['お預入れ'] or 0)
+    return row
+
+
 def parse_rakuten_row(row):
     """Parse numerical values in a Rakuten data row."""
     row['取引日'] = datetime.strptime(row['取引日'], "%Y%m%d")
@@ -183,6 +190,24 @@ def convert_smbc(csv_path):
     df = read_csv(
         csv_path,
         parse_smbc_row,
+        encoding='shift-jis',
+        delimiter=",",
+        skip=0,
+    )
+    return make_ynab(df, fields, create_negative_rows=False)
+
+
+def convert_smbc_new(csv_path):
+    """Convert SMBC checkings account statement."""
+    fields = {
+        '年月日': 'Date',
+        'お引出し': 'Outflow',
+        'お預入れ': 'Inflow',
+        'お取り扱い内容': "Memo",
+    }
+    df = read_csv(
+        csv_path,
+        parse_new_smbc_row,
         encoding='shift-jis',
         delimiter=",",
         skip=0,
@@ -277,6 +302,7 @@ def main(kwargs):
             'dkb_cc': convert_cc,
             'dkb_giro': convert_giro,
             'rakuten': convert_rakuten,
+            'smbc_new': convert_smbc_new,
             'smbc': convert_smbc,
         }
         for k, fn in mapping.items():
