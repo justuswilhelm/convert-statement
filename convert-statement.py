@@ -293,7 +293,6 @@ def main(kwargs):
     logging.debug("Looking for files matching glob '%s'", in_glob)
 
     for csv_path in glob(in_glob, recursive=True):
-        logging.info("Handling file '%s'", csv_path)
         mapping = {
             # shinsei_new comes before shinsei, on purpose
             'shinsei_new_v2': convert_shinsei_new_v2,
@@ -310,6 +309,7 @@ def main(kwargs):
                 break
         else:
             raise ValueError("Unknown format for file '{}'".format(csv_path))
+        logging.info("Handling file '%s' with %s", csv_path, fn)
         output = fn(csv_path)
 
         out_path = get_output_path(
