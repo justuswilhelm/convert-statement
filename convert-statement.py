@@ -9,6 +9,7 @@ from glob import glob
 from os import makedirs, path
 
 import pandas as pd
+import toml
 
 
 logging.basicConfig(level=logging.INFO)
@@ -289,7 +290,7 @@ def get_output_path(file_path, in_dir, out_dir):
 
 def main(kwargs):
     """Go through files in input folder and transform CSV files."""
-    in_glob = path.join(kwargs['in-dir'], '*/*.csv')
+    in_glob = path.join(kwargs['in_dir'], '*/*.csv')
     logging.debug("Looking for files matching glob '%s'", in_glob)
 
     for csv_path in glob(in_glob, recursive=True):
@@ -314,8 +315,8 @@ def main(kwargs):
 
         out_path = get_output_path(
             csv_path,
-            kwargs['in-dir'],
-            kwargs['out-dir'],
+            kwargs['in_dir'],
+            kwargs['out_dir'],
         )
         makedirs(path.dirname(out_path), exist_ok=True)
         logging.info("Writing results to '%s'", out_path)
@@ -324,7 +325,6 @@ def main(kwargs):
 
 
 if __name__ == "__main__":
-    parser = ArgumentParser()
-    parser.add_argument('in-dir')
-    parser.add_argument('out-dir')
-    main(vars(parser.parse_args()))
+    with open("config.toml") as fd:
+        config = toml.load(fd)
+    main(config)
