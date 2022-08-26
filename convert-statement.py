@@ -2,13 +2,12 @@
 """Parse DKB, Shinsei, SMBC bank statements and make them YNAB compatible."""
 import logging
 from argparse import ArgumentParser
-from csv import DictReader
+from csv import DictReader, DictWriter
 from datetime import datetime
 from decimal import Decimal
 from glob import glob
 from os import makedirs, path
 
-import pandas as pd
 import toml
 
 
@@ -16,17 +15,24 @@ logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
 
-def make_ynab(df, mapping, create_negative_rows=True):
+def make_ynab(rows, mapping, create_negative_rows=True):
     """Make YNAB compatible dataframe."""
-    df = df[list(mapping.keys())]
-    df = df.rename(mapping, axis=1)
-    df = df.set_index('Date')
-    df = df.sort_index()
-    if create_negative_rows:
-        negative_rows = df.Inflow < 0
-        df['Outflow'] = df.Inflow.mask(~negative_rows, 0).abs()
-        df.Inflow = df.Inflow.mask(negative_rows, 0)
-    return df
+    selected_keys = mapping.keys()
+    sub_selection = []
+    for row in rows:
+        sub = {}
+        for key, value in row.items():
+            if key not in selected_keys:
+                continue
+            translated_key = mapping[key]
+            sub[translated_key] = value
+        if create_negative_rows:
+            is_negative = sub["Inflow"] < 0
+            sub['Outflow'] = abs(sub["Inflow"]) if is_negative else 0
+            sub['Inflow'] = sub["Inflow"] if not is_negative else 0
+        sub_selection.append(sub)
+    sub_selection.sort(key=lambda row: row['Date'])
+    return sub_selection
 
 
 def parse_dkb_row(row):
@@ -122,8 +128,7 @@ def read_csv(csv_path, row_fn, encoding, delimiter, skip):
         for _ in range(skip):
             fd.readline()
         reader = DictReader(fd, delimiter=delimiter)
-        rows = list(map(row_fn, reader))
-    return pd.DataFrame(rows)
+        return list(map(row_fn, reader))
 
 
 def convert_shinsei(csv_path):
@@ -134,14 +139,14 @@ def convert_shinsei(csv_path):
         'CR': 'Inflow',
         'Description': 'Memo',
     }
-    df = read_csv(
+    rows = read_csv(
         csv_path,
         parse_shinsei_row,
         encoding='utf-16',
         delimiter='\t',
         skip=8,
     )
-    return make_ynab(df, fields, create_negative_rows=False)
+    return make_ynab(rows, fields, create_negative_rows=False)
 
 
 def convert_shinsei_new(csv_path):
@@ -152,14 +157,14 @@ def convert_shinsei_new(csv_path):
         'CR': 'Inflow',
         'Description': 'Memo',
     }
-    df = read_csv(
+    rows = read_csv(
         csv_path,
         parse_new_shinsei_row,
         encoding='shift-jis',
         delimiter=',',
         skip=0,
     )
-    return make_ynab(df, fields, create_negative_rows=False)
+    return make_ynab(rows, fields, create_negative_rows=False)
 
 
 def convert_shinsei_new_v2(csv_path):
@@ -170,14 +175,14 @@ def convert_shinsei_new_v2(csv_path):
         'CR': 'Inflow',
         'Description': 'Memo',
     }
-    df = read_csv(
+    rows = read_csv(
         csv_path,
         parse_new_shinsei_row_v2,
         encoding='utf-8-sig',
         delimiter=',',
         skip=0,
     )
-    return make_ynab(df, fields, create_negative_rows=False)
+    return make_ynab(rows, fields, create_negative_rows=False)
 
 
 def convert_smbc(csv_path):
@@ -188,14 +193,14 @@ def convert_smbc(csv_path):
         'お預入れ': 'Inflow',
         'お取り扱い内容': "Memo",
     }
-    df = read_csv(
+    rows = read_csv(
         csv_path,
         parse_smbc_row,
         encoding='shift-jis',
         delimiter=",",
         skip=0,
     )
-    return make_ynab(df, fields, create_negative_rows=False)
+    return make_ynab(rows, fields, create_negative_rows=False)
 
 
 def convert_smbc_new(csv_path):
@@ -206,14 +211,14 @@ def convert_smbc_new(csv_path):
         'お預入れ': 'Inflow',
         'お取り扱い内容': "Memo",
     }
-    df = read_csv(
+    rows = read_csv(
         csv_path,
         parse_new_smbc_row,
         encoding='shift-jis',
         delimiter=",",
         skip=0,
     )
-    return make_ynab(df, fields, create_negative_rows=False)
+    return make_ynab(rows, fields, create_negative_rows=False)
 
 
 def convert_rakuten(csv_path):
@@ -223,14 +228,14 @@ def convert_rakuten(csv_path):
         '入出金(円)': 'Inflow',
         '入出金先内容': 'Memo',
     }
-    df = read_csv(
+    rows = read_csv(
         csv_path,
         parse_rakuten_row,
         encoding='shift-jis',
         delimiter=",",
         skip=0,
     )
-    return make_ynab(df, fields, create_negative_rows=True)
+    return make_ynab(rows, fields, create_negative_rows=True)
 
 
 def convert_giro(csv_path):
@@ -241,14 +246,14 @@ def convert_giro(csv_path):
         'Verwendungszweck': 'Memo',
         'Auftraggeber / Begünstigter': 'Payee',
     }
-    df = read_csv(
+    rows = read_csv(
         csv_path,
         parse_dkb_row,
         encoding='latin_1',
         delimiter=';',
         skip=6,
     )
-    return make_ynab(df, giro_fields)
+    return make_ynab(rows, giro_fields)
 
 
 def convert_cc(csv_path):
@@ -259,7 +264,7 @@ def convert_cc(csv_path):
         'Beschreibung': 'Memo',
     }
     try:
-        df = read_csv(
+        rows = read_csv(
             csv_path,
             parse_dkb_row,
             delimiter=';',
@@ -268,16 +273,17 @@ def convert_cc(csv_path):
         )
     except KeyError:
         logging.warning("Encountered new DKB format in %s", csv_path)
-        df = read_csv(
+        rows = read_csv(
             csv_path,
             parse_dkb_row,
             delimiter=';',
             encoding='latin_1',
             skip=7,
         )
-    df_ynab = make_ynab(df, cc_fields)
-    df_ynab['Payee'] = df_ynab['Memo']
-    return df_ynab
+    rows = make_ynab(rows, cc_fields)
+    for row in rows:
+        row['Payee'] = row['Memo']
+    return rows
 
 
 def get_output_path(file_path, in_dir, out_dir):
@@ -320,7 +326,11 @@ def main(kwargs):
         )
         makedirs(path.dirname(out_path), exist_ok=True)
         logging.info("Writing results to '%s'", out_path)
-        output.to_csv(out_path)
+        with open(out_path, 'w') as fd:
+            writer = DictWriter(fd, fieldnames=output[0].keys())
+            writer.writeheader()
+            for row in output:
+                writer.writerow(row)
     logging.info("Finished")
 
 

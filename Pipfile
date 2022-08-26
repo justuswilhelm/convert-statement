@@ -4,9 +4,4 @@ verify_ssl = true
 name = "pypi"
 
 [packages]
-pandas = ">=1.0.1"
-numpy = "*"
-pytz = "*"
 toml = "*"
-
-[dev-packages]
