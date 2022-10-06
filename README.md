@@ -1,19 +1,14 @@
 # DKB-Convert
 
-```
-./convert-statement.py
-```
-
-## Configuration
-
-Create `config.toml` with contents
+Create `config.toml` with contents, while making sure that `in_dir` and
+`out_dir` do not point to the same or overlapping path.
 
 ```
 in_dir = "IN_DIR"
 out_dir = "OUT_DIR"
 ```
 
-Folder structure of in folder:
+Put the files in the in folder so that you will have the following tree:
 
 ```
 ./in
@@ -42,6 +37,14 @@ Folder structure of in folder:
     └── 2022-10-06
         └── transactions.csv
 ```
+
+Then run
+
+```
+pipenv run ./convert-statement.py
+```
+
+The output can be found in the out folder.
 
 ## Supported Banks
 
