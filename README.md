@@ -13,6 +13,36 @@ in_dir = "IN_DIR"
 out_dir = "OUT_DIR"
 ```
 
+Folder structure of in folder:
+
+```
+./in
+├── dkb_cc
+│   └── 2022-10-06
+│       └── transactions.csv
+├── dkb_giro
+│   └── 2022-10-06
+│       └── transactions.csv
+├── rakuten
+│   └── 2022-10-06
+│       └── transactions.csv
+├── shinsei
+│   └── 2022-10-06
+│       └── transactions.csv
+├── shinsei_new
+│   └── 2022-10-06
+│       └── transactions.csv
+├── shinsei_new_v2
+│   └── 2022-10-06
+│       └── transactions.csv
+├── smbc
+│   └── 2022-10-06
+│       └── transactions.csv
+└── smbc_new
+    └── 2022-10-06
+        └── transactions.csv
+```
+
 ## Supported Banks
 
 - DKB (CC and Giro as of Aug 2022)

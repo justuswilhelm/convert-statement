@@ -305,7 +305,7 @@ def get_output_path(file_path, in_dir, out_dir):
 
 def main(kwargs):
     """Go through files in input folder and transform CSV files."""
-    in_glob = path.join(kwargs["in_dir"], "*/*.csv")
+    in_glob = path.join(kwargs["in_dir"], "*/*/*.csv")
     logging.debug("Looking for files matching glob '%s'", in_glob)
 
     for csv_path in glob(in_glob, recursive=True):
