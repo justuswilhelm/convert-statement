@@ -1,6 +1,9 @@
 #!/usr/bin/env python3
 """Parse DKB, Shinsei, SMBC bank statements and make them YNAB compatible."""
 import logging
+from argparse import (
+    ArgumentParser,
+)
 from csv import (
     DictReader,
     DictWriter,
@@ -344,6 +347,9 @@ def main(kwargs):
 
 
 if __name__ == "__main__":
-    with open("config.toml") as fd:
+    parser = ArgumentParser()
+    parser.add_argument("--config", default="config.toml")
+    args = parser.parse_args()
+    with open(args.config) as fd:
         config = toml.load(fd)
     main(config)

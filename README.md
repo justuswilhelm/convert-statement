@@ -55,3 +55,9 @@ The output can be found in the out folder.
 - Rakuten Corporate (Format as of Aug 2022)
 - SMBC 普通預金 (Format until Jul 2022)
 - SMBC 普通預金 (Current as of Aug 2022)
+
+## Testing
+
+```
+pipenv run ./convert-statement.py --config test/data/config.toml
+```
