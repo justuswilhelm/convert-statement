@@ -8,6 +8,11 @@ from csv import (
     DictReader,
     DictWriter,
 )
+from dataclasses import (
+    asdict,
+    dataclass,
+    fields,
+)
 from datetime import (
     datetime,
 )
@@ -36,31 +41,36 @@ logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
 
+@dataclass
+class Transaction:
+    """A singular transaction."""
+
+    date: datetime
+    num: str
+    description: str
+    memo: str
+    withdrawal: Decimal
+    deposit: Decimal
+
+
 def make_ynab(
-    rows: List[Dict[str, Any]],
-    mapping: Mapping[str, str],
+    rows: List[Transaction],
     create_negative_rows: bool = True,
 ) -> List[Dict[str, Any]]:
     """Make YNAB compatible dataframe."""
-    selected_keys = mapping.keys()
     sub_selection = []
     for row in rows:
-        sub = {}
-        for key, value in row.items():
-            if key not in selected_keys:
-                continue
-            translated_key = mapping[key]
-            sub[translated_key] = value
+        sub = asdict(row)
         if create_negative_rows:
-            is_negative = sub["Inflow"] < 0
-            sub["Outflow"] = abs(sub["Inflow"]) if is_negative else 0
-            sub["Inflow"] = sub["Inflow"] if not is_negative else 0
+            is_negative = sub["deposit"] < 0
+            sub["withdrawal"] = abs(sub["deposit"]) if is_negative else 0
+            sub["deposit"] = sub["deposit"] if not is_negative else 0
         sub_selection.append(sub)
-    sub_selection.sort(key=lambda row: str(row["Date"]))
+    sub_selection.sort(key=lambda row: str(row["date"]))
     return sub_selection
 
 
-def parse_dkb_row(row: Dict[str, Any]) -> Dict[str, Any]:
+def parse_dkb_row(row: Dict[str, Any]) -> Transaction:
     """Parse dates and numerical values in DKB data."""
     row["Wertstellung"] = datetime.strptime(
         row["Wertstellung"],
@@ -80,10 +90,20 @@ def parse_dkb_row(row: Dict[str, Any]) -> Dict[str, Any]:
         row["Betrag (EUR)"].replace(".", "").replace(",", ".")
     )
     del row[""]
-    return row
+    description = row.get("Auftraggeber / Begünstigter", None)
+    if description is None:
+        description = row["Beschreibung"]
+    return Transaction(
+        date=row.get("Belegdatum", None) or row["Wertstellung"],
+        withdrawal=Decimal(0),
+        deposit=row["Betrag (EUR)"],
+        description=description,
+        memo=row.get("Verwendungszweck", None),
+        num="",
+    )
 
 
-def parse_shinsei_row(row: Dict[str, Any]) -> Dict[str, Any]:
+def parse_shinsei_row(row: Dict[str, Any]) -> Transaction:
     """Parse numerical values in Shinsei data."""
     if "CR" in row:
         row["CR"] = int(row["CR"] or 0)
@@ -93,10 +113,17 @@ def parse_shinsei_row(row: Dict[str, Any]) -> Dict[str, Any]:
         row["CR"] = int(row["お預り金額"] or 0)
         row["Value Date"] = row["取引日"]
         row["Description"] = row["摘要"]
-    return row
+    return Transaction(
+        date=row["Value Date"],
+        withdrawal=row["DR"],
+        deposit=row["CR"],
+        description=row["Description"],
+        memo="",
+        num="",
+    )
 
 
-def parse_new_shinsei_row(row: Dict[str, Any]) -> Dict[str, Any]:
+def parse_new_shinsei_row(row: Dict[str, Any]) -> Transaction:
     """Parse numerical values in new Shinsei data."""
     try:
         row["DR"] = int(row["出金金額"] or 0)
@@ -107,10 +134,17 @@ def parse_new_shinsei_row(row: Dict[str, Any]) -> Dict[str, Any]:
     except KeyError:
         row["DR"] = int(row["Debit"] or 0)
         row["CR"] = int(row["Credit"] or 0)
-    return row
+    return Transaction(
+        date=row["Value Date"],
+        withdrawal=row["DR"],
+        deposit=row["CR"],
+        description=row["Description"],
+        memo="",
+        num="",
+    )
 
 
-def parse_new_shinsei_row_v2(row: Dict[str, Any]) -> Dict[str, Any]:
+def parse_new_shinsei_row_v2(row: Dict[str, Any]) -> Transaction:
     """Parse numerical values in new Shinsei v2 data."""
     try:
         row["DR"] = int(row["出金金額"] or 0)
@@ -121,37 +155,65 @@ def parse_new_shinsei_row_v2(row: Dict[str, Any]) -> Dict[str, Any]:
     except KeyError:
         row["DR"] = int(row["Debit"] or 0)
         row["CR"] = int(row["Credit"] or 0)
-    return row
+    return Transaction(
+        date=row["Value Date"],
+        withdrawal=row["DR"],
+        deposit=row["CR"],
+        description=row["Description"],
+        memo="",
+        num="",
+    )
 
 
-def parse_smbc_row(row: Dict[str, Any]) -> Dict[str, Any]:
+def parse_smbc_row(row: Dict[str, Any]) -> Transaction:
     """Parse numerical values in a SMBC data row."""
     row["お引出し"] = -int(row["お引出し"] or 0)
     row["お預入れ"] = int(row["お預入れ"] or 0)
-    return row
+    return Transaction(
+        date=row["年月日"],
+        withdrawal=row["お引出し"],
+        deposit=row["お預入れ"],
+        description=row["お取り扱い内容"],
+        memo="",
+        num="",
+    )
 
 
-def parse_new_smbc_row(row: Dict[str, Any]) -> Dict[str, Any]:
+def parse_new_smbc_row(row: Dict[str, Any]) -> Transaction:
     """Parse numerical values in a SMBC data row."""
     row["お引出し"] = int(row["お引出し"] or 0)
     row["お預入れ"] = int(row["お預入れ"] or 0)
-    return row
+    return Transaction(
+        date=row["年月日"],
+        withdrawal=row["お引出し"],
+        deposit=row["お預入れ"],
+        description=row["お取り扱い内容"],
+        memo="",
+        num="",
+    )
 
 
-def parse_rakuten_row(row: Dict[str, Any]) -> Dict[str, Any]:
+def parse_rakuten_row(row: Dict[str, Any]) -> Transaction:
     """Parse numerical values in a Rakuten data row."""
     row["取引日"] = datetime.strptime(row["取引日"], "%Y%m%d")
     row["入出金(円)"] = int(row["入出金(円)"])
-    return row
+    return Transaction(
+        date=row["取引日"],
+        withdrawal=Decimal(0),
+        deposit=row["入出金(円)"],
+        description=row["入出金先内容"],
+        memo="",
+        num="",
+    )
 
 
 def read_csv(
     csv_path: str,
-    row_fn: Callable[[Dict[str, str]], Dict[str, Any]],
+    row_fn: Callable[[Dict[str, str]], Transaction],
     encoding: str,
     delimiter: str,
     skip: int,
-) -> List[Dict[str, str]]:
+) -> List[Transaction]:
     """Read a CSV file."""
     with open(csv_path, encoding=encoding) as fd:
         for _ in range(skip):
@@ -162,12 +224,6 @@ def read_csv(
 
 def convert_shinsei(csv_path: str) -> List[Dict[str, Any]]:
     """Convert Shinsei checkings account statement."""
-    fields = {
-        "Value Date": "Date",
-        "DR": "Outflow",
-        "CR": "Inflow",
-        "Description": "Memo",
-    }
     rows = read_csv(
         csv_path,
         parse_shinsei_row,
@@ -175,17 +231,11 @@ def convert_shinsei(csv_path: str) -> List[Dict[str, Any]]:
         delimiter="\t",
         skip=8,
     )
-    return make_ynab(rows, fields, create_negative_rows=False)
+    return make_ynab(rows, create_negative_rows=False)
 
 
 def convert_shinsei_new(csv_path: str) -> List[Dict[str, Any]]:
     """Convert new Shinsei checkings account statement."""
-    fields = {
-        "Value Date": "Date",
-        "DR": "Outflow",
-        "CR": "Inflow",
-        "Description": "Memo",
-    }
     rows = read_csv(
         csv_path,
         parse_new_shinsei_row,
@@ -193,17 +243,11 @@ def convert_shinsei_new(csv_path: str) -> List[Dict[str, Any]]:
         delimiter=",",
         skip=0,
     )
-    return make_ynab(rows, fields, create_negative_rows=False)
+    return make_ynab(rows, create_negative_rows=False)
 
 
 def convert_shinsei_new_v2(csv_path: str) -> List[Dict[str, Any]]:
     """Convert new Shinsei checkings account statement."""
-    fields = {
-        "Value Date": "Date",
-        "DR": "Outflow",
-        "CR": "Inflow",
-        "Description": "Memo",
-    }
     rows = read_csv(
         csv_path,
         parse_new_shinsei_row_v2,
@@ -211,17 +255,11 @@ def convert_shinsei_new_v2(csv_path: str) -> List[Dict[str, Any]]:
         delimiter=",",
         skip=0,
     )
-    return make_ynab(rows, fields, create_negative_rows=False)
+    return make_ynab(rows, create_negative_rows=False)
 
 
 def convert_smbc(csv_path: str) -> List[Dict[str, Any]]:
     """Convert SMBC checkings account statement."""
-    fields = {
-        "年月日": "Date",
-        "お引出し": "Outflow",
-        "お預入れ": "Inflow",
-        "お取り扱い内容": "Memo",
-    }
     rows = read_csv(
         csv_path,
         parse_smbc_row,
@@ -229,17 +267,11 @@ def convert_smbc(csv_path: str) -> List[Dict[str, Any]]:
         delimiter=",",
         skip=0,
     )
-    return make_ynab(rows, fields, create_negative_rows=False)
+    return make_ynab(rows, create_negative_rows=False)
 
 
 def convert_smbc_new(csv_path: str) -> List[Dict[str, Any]]:
     """Convert SMBC checkings account statement."""
-    fields = {
-        "年月日": "Date",
-        "お引出し": "Outflow",
-        "お預入れ": "Inflow",
-        "お取り扱い内容": "Memo",
-    }
     rows = read_csv(
         csv_path,
         parse_new_smbc_row,
@@ -247,16 +279,11 @@ def convert_smbc_new(csv_path: str) -> List[Dict[str, Any]]:
         delimiter=",",
         skip=0,
     )
-    return make_ynab(rows, fields, create_negative_rows=False)
+    return make_ynab(rows, create_negative_rows=False)
 
 
 def convert_rakuten(csv_path: str) -> List[Dict[str, Any]]:
     """Convert Rakuten checkings account statement."""
-    fields = {
-        "取引日": "Date",
-        "入出金(円)": "Inflow",
-        "入出金先内容": "Memo",
-    }
     rows = read_csv(
         csv_path,
         parse_rakuten_row,
@@ -264,17 +291,11 @@ def convert_rakuten(csv_path: str) -> List[Dict[str, Any]]:
         delimiter=",",
         skip=0,
     )
-    return make_ynab(rows, fields, create_negative_rows=True)
+    return make_ynab(rows, create_negative_rows=True)
 
 
 def convert_giro(csv_path: str) -> List[Dict[str, Any]]:
     """Convert DKB giro account statement."""
-    giro_fields = {
-        "Wertstellung": "Date",
-        "Betrag (EUR)": "Inflow",
-        "Verwendungszweck": "Memo",
-        "Auftraggeber / Begünstigter": "Payee",
-    }
     rows = read_csv(
         csv_path,
         parse_dkb_row,
@@ -282,16 +303,11 @@ def convert_giro(csv_path: str) -> List[Dict[str, Any]]:
         delimiter=";",
         skip=6,
     )
-    return make_ynab(rows, giro_fields)
+    return make_ynab(rows)
 
 
 def convert_cc(csv_path: str) -> List[Dict[str, Any]]:
     """Convert DKB credit card statement."""
-    cc_fields = {
-        "Belegdatum": "Date",
-        "Betrag (EUR)": "Inflow",
-        "Beschreibung": "Memo",
-    }
     try:
         rows = read_csv(
             csv_path,
@@ -309,10 +325,7 @@ def convert_cc(csv_path: str) -> List[Dict[str, Any]]:
             encoding="latin_1",
             skip=7,
         )
-    rows = make_ynab(rows, cc_fields)
-    for row in rows:
-        row["Payee"] = row["Memo"]
-    return rows
+    return make_ynab(rows)
 
 
 def get_output_path(file_path: str, in_dir: str, out_dir: str) -> str:
@@ -355,8 +368,9 @@ def main(kwargs: Mapping[str, str]) -> None:
         )
         makedirs(path.dirname(out_path), exist_ok=True)
         logging.info("Writing results to '%s'", out_path)
+        fieldnames = [f.name for f in fields(Transaction)]
         with open(out_path, "w") as fd:
-            writer = DictWriter(fd, fieldnames=output[0].keys())
+            writer = DictWriter(fd, fieldnames=fieldnames)
             writer.writeheader()
             for row in output:
                 writer.writerow(row)
