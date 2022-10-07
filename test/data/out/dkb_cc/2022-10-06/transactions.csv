@@ -1,4 +1,4 @@
-Date,Memo,Inflow,Outflow,Payee
-2022-10-05 00:00:00,Withdrawal,0,1337.37,Withdrawal
-2022-10-05 00:00:00,Withdrawal,0,1337.37,Withdrawal
-2022-10-05 00:00:00,Deposit,1337.37,0,Deposit
+date,num,description,memo,withdrawal,deposit
+2022-10-05 00:00:00,,Withdrawal,,1337.37,0
+2022-10-05 00:00:00,,Withdrawal,,1337.37,0
+2022-10-05 00:00:00,,Deposit,,0,1337.37
