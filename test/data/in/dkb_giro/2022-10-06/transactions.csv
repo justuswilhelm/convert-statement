@@ -1,0 +1,13 @@
+"Kontonummer:";"DE85120300001012460935 / Privatkonto I";
+
+"Von:";"05.10.2022";
+"Bis:";"06.10.2022";
+"Kontostand vom 06.10.2022:";"1.337,37 EUR";
+
+"Buchungstag";"Wertstellung";"Buchungstext";"Auftraggeber / Begünstigter";"Verwendungszweck";"Kontonummer";"BLZ";"Betrag (EUR)";"Gläubiger-ID";"Mandatsreferenz";"Kundenreferenz";
+"06.10.2022";"05.10.2022";"Überweisung";"ACME";"Withdrawal";"IBAN";"BIC";"-1.337,37";"";"";"";
+"06.10.2022";"05.10.2022";"Gutschrift";"ACME";"Deposit";"IBAN";"BIC";"1.337,18";"";"";"";
+"06.10.2022";"05.10.2022";"Abschluss";"";"Withdrawal";"IBAN";"BIC";"0,00";"";"";"";
+"06.10.2022";"05.10.2022";"Echtzeit Gutschrift";"ACME";"Deposit";"IBAN";"BIC";"1.337,37";"";"";"";
+"06.10.2022";"05.10.2022";"";"GEBUEHRENKONTO HANDYAUFLADUNG";"Withdrawal";"IBAN";"BIC";"-1.337,37";"";"";"";
+"06.10.2022";"05.10.2022";"Lastschrift";"ACME";"Withdrawal";"IBAN";"BIC";"-1.337,37";"";"";"";

@@ -1,0 +1,11 @@
+"Kreditkarte:";"4242********4242";
+
+"Von:";"05.10.2022";
+"Bis:";"06.10.2022";
+"Saldo:";"0 EUR";
+"Datum:";"06.10.2022";
+
+"Umsatz abgerechnet und nicht im Saldo enthalten";"Wertstellung";"Belegdatum";"Beschreibung";"Betrag (EUR)";"Ursprünglicher Betrag";
+"Nein";"06.10.2022";"05.10.2022";"Withdrawal";"-1.337,37";"31.337,00 LOL";
+"Ja";"06.10.2022";"05.10.2022";"Withdrawal";"-1.337,37";"31.337,00 LOL";
+"Ja";"06.10.2022";"05.10.2022";"Deposit";"1.337,37";"31.337,00 LOL";
