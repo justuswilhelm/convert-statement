@@ -37,6 +37,17 @@ from typing import (
 import toml
 
 
+@dataclass
+class CsvFormat:
+    """Store format info for a CSV file."""
+
+    parser: Callable[[Dict[str, Any]], "Transaction"]
+    encoding: str
+    delimiter: str
+    skip: int
+    create_negative_rows: bool
+
+
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
@@ -103,40 +114,31 @@ def parse_dkb_row(row: Dict[str, Any]) -> Transaction:
     )
 
 
-def convert_giro(csv_path: str) -> List[Dict[str, Any]]:
-    """Convert DKB giro account statement."""
-    rows = read_csv(
-        csv_path,
-        parse_dkb_row,
-        encoding="latin_1",
-        delimiter=";",
-        skip=6,
-    )
-    return make_ynab(rows)
+convert_giro = CsvFormat(
+    parser=parse_dkb_row,
+    encoding="latin_1",
+    delimiter=";",
+    skip=6,
+    create_negative_rows=True,
+)
 
 
-def convert_cc_von_bis(csv_path: str) -> List[Dict[str, Any]]:
-    """Convert DKB credit card statement with von + bis."""
-    rows = read_csv(
-        csv_path,
-        parse_dkb_row,
-        delimiter=";",
-        encoding="latin_1",
-        skip=7,
-    )
-    return make_ynab(rows)
+convert_cc_von_bis = CsvFormat(
+    parser=parse_dkb_row,
+    delimiter=";",
+    encoding="latin_1",
+    skip=7,
+    create_negative_rows=True,
+)
 
 
-def convert_cc_zeitraum(csv_path: str) -> List[Dict[str, Any]]:
-    """Convert DKB credit card statement with von + bis."""
-    rows = read_csv(
-        csv_path,
-        parse_dkb_row,
-        delimiter=";",
-        encoding="latin_1",
-        skip=6,
-    )
-    return make_ynab(rows)
+convert_cc_zeitraum = CsvFormat(
+    parser=parse_dkb_row,
+    delimiter=";",
+    encoding="latin_1",
+    skip=6,
+    create_negative_rows=True,
+)
 
 
 def parse_shinsei_row(row: Dict[str, Any]) -> Transaction:
@@ -201,40 +203,31 @@ def parse_new_shinsei_row_v2(row: Dict[str, Any]) -> Transaction:
     )
 
 
-def convert_shinsei(csv_path: str) -> List[Dict[str, Any]]:
-    """Convert Shinsei checkings account statement."""
-    rows = read_csv(
-        csv_path,
-        parse_shinsei_row,
-        encoding="utf-16",
-        delimiter="\t",
-        skip=8,
-    )
-    return make_ynab(rows, create_negative_rows=False)
+convert_shinsei = CsvFormat(
+    parser=parse_shinsei_row,
+    encoding="utf-16",
+    delimiter="\t",
+    skip=8,
+    create_negative_rows=False,
+)
 
 
-def convert_shinsei_new(csv_path: str) -> List[Dict[str, Any]]:
-    """Convert new Shinsei checkings account statement."""
-    rows = read_csv(
-        csv_path,
-        parse_new_shinsei_row,
-        encoding="shift-jis",
-        delimiter=",",
-        skip=0,
-    )
-    return make_ynab(rows, create_negative_rows=False)
+convert_shinsei_new = CsvFormat(
+    parser=parse_new_shinsei_row,
+    encoding="shift-jis",
+    delimiter=",",
+    skip=0,
+    create_negative_rows=False,
+)
 
 
-def convert_shinsei_new_v2(csv_path: str) -> List[Dict[str, Any]]:
-    """Convert new Shinsei checkings account statement."""
-    rows = read_csv(
-        csv_path,
-        parse_new_shinsei_row_v2,
-        encoding="utf-8-sig",
-        delimiter=",",
-        skip=0,
-    )
-    return make_ynab(rows, create_negative_rows=False)
+convert_shinsei_new_v2 = CsvFormat(
+    parser=parse_new_shinsei_row_v2,
+    encoding="utf-8-sig",
+    delimiter=",",
+    skip=0,
+    create_negative_rows=False,
+)
 
 
 def parse_smbc_row(row: Dict[str, Any]) -> Transaction:
@@ -265,28 +258,22 @@ def parse_new_smbc_row(row: Dict[str, Any]) -> Transaction:
     )
 
 
-def convert_smbc(csv_path: str) -> List[Dict[str, Any]]:
-    """Convert SMBC checkings account statement."""
-    rows = read_csv(
-        csv_path,
-        parse_smbc_row,
-        encoding="shift-jis",
-        delimiter=",",
-        skip=0,
-    )
-    return make_ynab(rows, create_negative_rows=False)
+convert_smbc = CsvFormat(
+    parser=parse_smbc_row,
+    encoding="shift-jis",
+    delimiter=",",
+    skip=0,
+    create_negative_rows=False,
+)
 
 
-def convert_smbc_new(csv_path: str) -> List[Dict[str, Any]]:
-    """Convert SMBC checkings account statement."""
-    rows = read_csv(
-        csv_path,
-        parse_new_smbc_row,
-        encoding="shift-jis",
-        delimiter=",",
-        skip=0,
-    )
-    return make_ynab(rows, create_negative_rows=False)
+convert_smbc_new = CsvFormat(
+    parser=parse_new_smbc_row,
+    encoding="shift-jis",
+    delimiter=",",
+    skip=0,
+    create_negative_rows=False,
+)
 
 
 def parse_rakuten_row(row: Dict[str, Any]) -> Transaction:
@@ -303,16 +290,13 @@ def parse_rakuten_row(row: Dict[str, Any]) -> Transaction:
     )
 
 
-def convert_rakuten(csv_path: str) -> List[Dict[str, Any]]:
-    """Convert Rakuten checkings account statement."""
-    rows = read_csv(
-        csv_path,
-        parse_rakuten_row,
-        encoding="shift-jis",
-        delimiter=",",
-        skip=0,
-    )
-    return make_ynab(rows, create_negative_rows=True)
+convert_rakuten = CsvFormat(
+    parser=parse_rakuten_row,
+    encoding="shift-jis",
+    delimiter=",",
+    skip=0,
+    create_negative_rows=True,
+)
 
 
 def read_csv(
@@ -344,7 +328,7 @@ def main(kwargs: Mapping[str, str]) -> None:
     logging.debug("Looking for files matching glob '%s'", in_glob)
 
     for csv_path in glob(in_glob, recursive=True):
-        mapping: Mapping[str, Callable[[str], List[Dict[str, Any]]]] = {
+        mapping: Mapping[str, CsvFormat] = {
             # shinsei_new comes before shinsei, on purpose
             "shinsei_new_v2": convert_shinsei_new_v2,
             "shinsei_new": convert_shinsei_new,
@@ -362,7 +346,18 @@ def main(kwargs: Mapping[str, str]) -> None:
         else:
             raise ValueError("Unknown format for file '{}'".format(csv_path))
         logging.info("Handling file '%s' with %s", csv_path, fn)
-        output = fn(csv_path)
+
+        rows = read_csv(
+            csv_path,
+            fn.parser,
+            encoding=fn.encoding,
+            delimiter=fn.delimiter,
+            skip=fn.skip,
+        )
+        output = make_ynab(
+            rows,
+            create_negative_rows=fn.create_negative_rows,
+        )
 
         out_path = get_output_path(
             csv_path,
