@@ -33,16 +33,39 @@ from typing import (
     Iterable,
     List,
     Mapping,
+    Union,
 )
 
 import toml
+
+
+CsvReaderInput = Dict[str, str]
+
+
+@dataclass
+class CsvTransactionParser:
+    """Parse csv rows to transaction attributes."""
+
+    date: Callable[[CsvReaderInput], datetime]
+    num: Callable[[CsvReaderInput], str]
+    description: Callable[[CsvReaderInput], str]
+    memo: Callable[[CsvReaderInput], str]
+    withdrawal: Callable[[Decimal], str]
+    deposit: Callable[[Decimal], str]
+
+
+@dataclass
+class SimpleCsvTransactionParser:
+    """Parse csv rows to transaction attributes, legacy."""
+
+    method: Callable[[Dict[str, Any]], "Transaction"]
 
 
 @dataclass
 class CsvFormat:
     """Store format info for a CSV file."""
 
-    parser: Callable[[Dict[str, Any]], "Transaction"]
+    parser: Union[CsvTransactionParser, SimpleCsvTransactionParser]
     encoding: str
     delimiter: str
     skip: int
@@ -117,7 +140,7 @@ def parse_dkb_row(row: Dict[str, Any]) -> Transaction:
 
 
 convert_giro = CsvFormat(
-    parser=parse_dkb_row,
+    parser=SimpleCsvTransactionParser(parse_dkb_row),
     encoding="latin_1",
     delimiter=";",
     skip=6,
@@ -127,7 +150,7 @@ convert_giro = CsvFormat(
 
 
 convert_cc_von_bis = CsvFormat(
-    parser=parse_dkb_row,
+    parser=SimpleCsvTransactionParser(parse_dkb_row),
     delimiter=";",
     encoding="latin_1",
     skip=7,
@@ -137,7 +160,7 @@ convert_cc_von_bis = CsvFormat(
 
 
 convert_cc_zeitraum = CsvFormat(
-    parser=parse_dkb_row,
+    parser=SimpleCsvTransactionParser(parse_dkb_row),
     delimiter=";",
     encoding="latin_1",
     skip=6,
@@ -209,7 +232,7 @@ def parse_new_shinsei_row_v2(row: Dict[str, Any]) -> Transaction:
 
 
 convert_shinsei = CsvFormat(
-    parser=parse_shinsei_row,
+    parser=SimpleCsvTransactionParser(parse_shinsei_row),
     encoding="utf-16",
     delimiter="\t",
     skip=8,
@@ -219,7 +242,7 @@ convert_shinsei = CsvFormat(
 
 
 convert_shinsei_new = CsvFormat(
-    parser=parse_new_shinsei_row,
+    parser=SimpleCsvTransactionParser(parse_new_shinsei_row),
     encoding="shift-jis",
     delimiter=",",
     skip=0,
@@ -229,7 +252,7 @@ convert_shinsei_new = CsvFormat(
 
 
 convert_shinsei_new_v2 = CsvFormat(
-    parser=parse_new_shinsei_row_v2,
+    parser=SimpleCsvTransactionParser(parse_new_shinsei_row_v2),
     encoding="utf-8-sig",
     delimiter=",",
     skip=0,
@@ -267,7 +290,7 @@ def parse_new_smbc_row(row: Dict[str, Any]) -> Transaction:
 
 
 convert_smbc = CsvFormat(
-    parser=parse_smbc_row,
+    parser=SimpleCsvTransactionParser(parse_smbc_row),
     encoding="shift-jis",
     delimiter=",",
     skip=0,
@@ -277,7 +300,7 @@ convert_smbc = CsvFormat(
 
 
 convert_smbc_new = CsvFormat(
-    parser=parse_new_smbc_row,
+    parser=SimpleCsvTransactionParser(parse_new_smbc_row),
     encoding="shift-jis",
     delimiter=",",
     skip=0,
@@ -301,7 +324,7 @@ def parse_rakuten_row(row: Dict[str, Any]) -> Transaction:
 
 
 convert_rakuten = CsvFormat(
-    parser=parse_rakuten_row,
+    parser=SimpleCsvTransactionParser(parse_rakuten_row),
     encoding="shift-jis",
     delimiter=",",
     skip=0,
@@ -312,7 +335,7 @@ convert_rakuten = CsvFormat(
 
 def read_csv(
     csv_path: str,
-    row_fn: Callable[[Dict[str, str]], Transaction],
+    simple_parser: SimpleCsvTransactionParser,
     encoding: str,
     delimiter: str,
     skip: int,
@@ -322,7 +345,7 @@ def read_csv(
         for _ in range(skip):
             fd.readline()
         reader = DictReader(fd, delimiter=delimiter)
-        return list(map(row_fn, reader))
+        return list(map(simple_parser.method, reader))
 
 
 def get_output_path(file_path: str, in_dir: str, out_dir: str) -> str:
@@ -360,13 +383,17 @@ def main(kwargs: Mapping[str, str]) -> None:
             raise ValueError("Unknown format for file '{}'".format(csv_path))
         logging.info("Handling file '%s' with %s", csv_path, fmt)
 
-        rows = read_csv(
-            csv_path,
-            fmt.parser,
-            encoding=fmt.encoding,
-            delimiter=fmt.delimiter,
-            skip=fmt.skip,
-        )
+        if isinstance(fmt.parser, SimpleCsvTransactionParser):
+            rows = read_csv(
+                csv_path,
+                fmt.parser,
+                encoding=fmt.encoding,
+                delimiter=fmt.delimiter,
+                skip=fmt.skip,
+            )
+        else:
+            rows = []
+            logging.error("%s not supported", fmt.parser)
         output = make_ynab(
             rows,
             create_negative_rows=fmt.create_negative_rows,
