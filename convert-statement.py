@@ -263,6 +263,30 @@ def parse_new_smbc_row(row: Dict[str, Any]) -> Transaction:
     )
 
 
+def convert_smbc(csv_path: str) -> List[Dict[str, Any]]:
+    """Convert SMBC checkings account statement."""
+    rows = read_csv(
+        csv_path,
+        parse_smbc_row,
+        encoding="shift-jis",
+        delimiter=",",
+        skip=0,
+    )
+    return make_ynab(rows, create_negative_rows=False)
+
+
+def convert_smbc_new(csv_path: str) -> List[Dict[str, Any]]:
+    """Convert SMBC checkings account statement."""
+    rows = read_csv(
+        csv_path,
+        parse_new_smbc_row,
+        encoding="shift-jis",
+        delimiter=",",
+        skip=0,
+    )
+    return make_ynab(rows, create_negative_rows=False)
+
+
 def parse_rakuten_row(row: Dict[str, Any]) -> Transaction:
     """Parse numerical values in a Rakuten data row."""
     row["取引日"] = datetime.strptime(row["取引日"], "%Y%m%d")
@@ -302,30 +326,6 @@ def read_csv(
             fd.readline()
         reader = DictReader(fd, delimiter=delimiter)
         return list(map(row_fn, reader))
-
-
-def convert_smbc(csv_path: str) -> List[Dict[str, Any]]:
-    """Convert SMBC checkings account statement."""
-    rows = read_csv(
-        csv_path,
-        parse_smbc_row,
-        encoding="shift-jis",
-        delimiter=",",
-        skip=0,
-    )
-    return make_ynab(rows, create_negative_rows=False)
-
-
-def convert_smbc_new(csv_path: str) -> List[Dict[str, Any]]:
-    """Convert SMBC checkings account statement."""
-    rows = read_csv(
-        csv_path,
-        parse_new_smbc_row,
-        encoding="shift-jis",
-        delimiter=",",
-        skip=0,
-    )
-    return make_ynab(rows, create_negative_rows=False)
 
 
 def get_output_path(file_path: str, in_dir: str, out_dir: str) -> str:
