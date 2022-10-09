@@ -322,24 +322,26 @@ def get_output_path(file_path: str, in_dir: str, out_dir: str) -> str:
     )
 
 
+mapping: Mapping[str, CsvFormat] = {
+    # shinsei_new comes before shinsei, on purpose
+    "shinsei_new_v2": convert_shinsei_new_v2,
+    "shinsei_new": convert_shinsei_new,
+    "shinsei": convert_shinsei,
+    "dkb_cc_von_bis": convert_cc_von_bis,
+    "dkb_cc_zeitraum": convert_cc_zeitraum,
+    "dkb_giro": convert_giro,
+    "rakuten": convert_rakuten,
+    "smbc_new": convert_smbc_new,
+    "smbc": convert_smbc,
+}
+
+
 def main(kwargs: Mapping[str, str]) -> None:
     """Go through files in input folder and transform CSV files."""
     in_glob = path.join(kwargs["in_dir"], "*/*/*.csv")
     logging.debug("Looking for files matching glob '%s'", in_glob)
 
     for csv_path in glob(in_glob, recursive=True):
-        mapping: Mapping[str, CsvFormat] = {
-            # shinsei_new comes before shinsei, on purpose
-            "shinsei_new_v2": convert_shinsei_new_v2,
-            "shinsei_new": convert_shinsei_new,
-            "shinsei": convert_shinsei,
-            "dkb_cc_von_bis": convert_cc_von_bis,
-            "dkb_cc_zeitraum": convert_cc_zeitraum,
-            "dkb_giro": convert_giro,
-            "rakuten": convert_rakuten,
-            "smbc_new": convert_smbc_new,
-            "smbc": convert_smbc,
-        }
         for k, fn in mapping.items():
             if k in csv_path:
                 break
