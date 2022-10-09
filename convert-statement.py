@@ -30,6 +30,7 @@ from typing import (
     Any,
     Callable,
     Dict,
+    Iterable,
     List,
     Mapping,
 )
@@ -46,6 +47,7 @@ class CsvFormat:
     delimiter: str
     skip: int
     create_negative_rows: bool
+    path: str
 
 
 logging.basicConfig(level=logging.INFO)
@@ -120,6 +122,7 @@ convert_giro = CsvFormat(
     delimiter=";",
     skip=6,
     create_negative_rows=True,
+    path="dkb_giro",
 )
 
 
@@ -129,6 +132,7 @@ convert_cc_von_bis = CsvFormat(
     encoding="latin_1",
     skip=7,
     create_negative_rows=True,
+    path="dkb_cc_von_bis",
 )
 
 
@@ -138,6 +142,7 @@ convert_cc_zeitraum = CsvFormat(
     encoding="latin_1",
     skip=6,
     create_negative_rows=True,
+    path="dkb_cc_zeitraum",
 )
 
 
@@ -209,6 +214,7 @@ convert_shinsei = CsvFormat(
     delimiter="\t",
     skip=8,
     create_negative_rows=False,
+    path="shinsei",
 )
 
 
@@ -218,6 +224,7 @@ convert_shinsei_new = CsvFormat(
     delimiter=",",
     skip=0,
     create_negative_rows=False,
+    path="shinsei_new",
 )
 
 
@@ -227,6 +234,7 @@ convert_shinsei_new_v2 = CsvFormat(
     delimiter=",",
     skip=0,
     create_negative_rows=False,
+    path="shinsei_new_v2",
 )
 
 
@@ -264,6 +272,7 @@ convert_smbc = CsvFormat(
     delimiter=",",
     skip=0,
     create_negative_rows=False,
+    path="smbc",
 )
 
 
@@ -273,6 +282,7 @@ convert_smbc_new = CsvFormat(
     delimiter=",",
     skip=0,
     create_negative_rows=False,
+    path="smbc_new",
 )
 
 
@@ -296,6 +306,7 @@ convert_rakuten = CsvFormat(
     delimiter=",",
     skip=0,
     create_negative_rows=True,
+    path="rakuten",
 )
 
 
@@ -322,18 +333,18 @@ def get_output_path(file_path: str, in_dir: str, out_dir: str) -> str:
     )
 
 
-mapping: Mapping[str, CsvFormat] = {
+formats: Iterable[CsvFormat] = (
     # shinsei_new comes before shinsei, on purpose
-    "shinsei_new_v2": convert_shinsei_new_v2,
-    "shinsei_new": convert_shinsei_new,
-    "shinsei": convert_shinsei,
-    "dkb_cc_von_bis": convert_cc_von_bis,
-    "dkb_cc_zeitraum": convert_cc_zeitraum,
-    "dkb_giro": convert_giro,
-    "rakuten": convert_rakuten,
-    "smbc_new": convert_smbc_new,
-    "smbc": convert_smbc,
-}
+    convert_shinsei_new_v2,
+    convert_shinsei_new,
+    convert_shinsei,
+    convert_cc_zeitraum,
+    convert_cc_von_bis,
+    convert_giro,
+    convert_rakuten,
+    convert_smbc_new,
+    convert_smbc,
+)
 
 
 def main(kwargs: Mapping[str, str]) -> None:
@@ -342,23 +353,23 @@ def main(kwargs: Mapping[str, str]) -> None:
     logging.debug("Looking for files matching glob '%s'", in_glob)
 
     for csv_path in glob(in_glob, recursive=True):
-        for k, fn in mapping.items():
-            if k in csv_path:
+        for fmt in formats:
+            if fmt.path in csv_path:
                 break
         else:
             raise ValueError("Unknown format for file '{}'".format(csv_path))
-        logging.info("Handling file '%s' with %s", csv_path, fn)
+        logging.info("Handling file '%s' with %s", csv_path, fmt)
 
         rows = read_csv(
             csv_path,
-            fn.parser,
-            encoding=fn.encoding,
-            delimiter=fn.delimiter,
-            skip=fn.skip,
+            fmt.parser,
+            encoding=fmt.encoding,
+            delimiter=fmt.delimiter,
+            skip=fmt.skip,
         )
         output = make_ynab(
             rows,
-            create_negative_rows=fn.create_negative_rows,
+            create_negative_rows=fmt.create_negative_rows,
         )
 
         out_path = get_output_path(
