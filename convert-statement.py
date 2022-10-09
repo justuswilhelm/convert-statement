@@ -243,6 +243,18 @@ def parse_rakuten_row(row: Dict[str, Any]) -> Transaction:
     )
 
 
+def convert_rakuten(csv_path: str) -> List[Dict[str, Any]]:
+    """Convert Rakuten checkings account statement."""
+    rows = read_csv(
+        csv_path,
+        parse_rakuten_row,
+        encoding="shift-jis",
+        delimiter=",",
+        skip=0,
+    )
+    return make_ynab(rows, create_negative_rows=True)
+
+
 def read_csv(
     csv_path: str,
     row_fn: Callable[[Dict[str, str]], Transaction],
@@ -280,18 +292,6 @@ def convert_smbc_new(csv_path: str) -> List[Dict[str, Any]]:
         skip=0,
     )
     return make_ynab(rows, create_negative_rows=False)
-
-
-def convert_rakuten(csv_path: str) -> List[Dict[str, Any]]:
-    """Convert Rakuten checkings account statement."""
-    rows = read_csv(
-        csv_path,
-        parse_rakuten_row,
-        encoding="shift-jis",
-        delimiter=",",
-        skip=0,
-    )
-    return make_ynab(rows, create_negative_rows=True)
 
 
 def convert_giro(csv_path: str) -> List[Dict[str, Any]]:
