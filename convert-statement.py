@@ -103,6 +103,40 @@ def parse_dkb_row(row: Dict[str, Any]) -> Transaction:
     )
 
 
+def convert_giro(csv_path: str) -> List[Dict[str, Any]]:
+    """Convert DKB giro account statement."""
+    rows = read_csv(
+        csv_path,
+        parse_dkb_row,
+        encoding="latin_1",
+        delimiter=";",
+        skip=6,
+    )
+    return make_ynab(rows)
+
+
+def convert_cc(csv_path: str) -> List[Dict[str, Any]]:
+    """Convert DKB credit card statement."""
+    try:
+        rows = read_csv(
+            csv_path,
+            parse_dkb_row,
+            delimiter=";",
+            encoding="latin_1",
+            skip=6,
+        )
+    except KeyError:
+        logging.warning("Encountered new DKB format in %s", csv_path)
+        rows = read_csv(
+            csv_path,
+            parse_dkb_row,
+            delimiter=";",
+            encoding="latin_1",
+            skip=7,
+        )
+    return make_ynab(rows)
+
+
 def parse_shinsei_row(row: Dict[str, Any]) -> Transaction:
     """Parse numerical values in Shinsei data."""
     if "CR" in row:
@@ -292,40 +326,6 @@ def convert_smbc_new(csv_path: str) -> List[Dict[str, Any]]:
         skip=0,
     )
     return make_ynab(rows, create_negative_rows=False)
-
-
-def convert_giro(csv_path: str) -> List[Dict[str, Any]]:
-    """Convert DKB giro account statement."""
-    rows = read_csv(
-        csv_path,
-        parse_dkb_row,
-        encoding="latin_1",
-        delimiter=";",
-        skip=6,
-    )
-    return make_ynab(rows)
-
-
-def convert_cc(csv_path: str) -> List[Dict[str, Any]]:
-    """Convert DKB credit card statement."""
-    try:
-        rows = read_csv(
-            csv_path,
-            parse_dkb_row,
-            delimiter=";",
-            encoding="latin_1",
-            skip=6,
-        )
-    except KeyError:
-        logging.warning("Encountered new DKB format in %s", csv_path)
-        rows = read_csv(
-            csv_path,
-            parse_dkb_row,
-            delimiter=";",
-            encoding="latin_1",
-            skip=7,
-        )
-    return make_ynab(rows)
 
 
 def get_output_path(file_path: str, in_dir: str, out_dir: str) -> str:
