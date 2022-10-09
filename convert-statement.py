@@ -115,26 +115,30 @@ def convert_giro(csv_path: str) -> List[Dict[str, Any]]:
     return make_ynab(rows)
 
 
-def convert_cc(csv_path: str) -> List[Dict[str, Any]]:
-    """Convert DKB credit card statement."""
-    try:
-        rows = read_csv(
-            csv_path,
-            parse_dkb_row,
-            delimiter=";",
-            encoding="latin_1",
-            skip=6,
-        )
-    except KeyError:
-        logging.warning("Encountered new DKB format in %s", csv_path)
-        rows = read_csv(
-            csv_path,
-            parse_dkb_row,
-            delimiter=";",
-            encoding="latin_1",
-            skip=7,
-        )
-    return make_ynab(rows)
+def convert_cc_von_bis(csv_path: str) -> List[Dict[str, Any]]:
+    """Convert DKB credit card statement with von + bis."""
+    rows = read_csv(
+        csv_path,
+        parse_dkb_row,
+        delimiter=";",
+        encoding="latin_1",
+        skip=7,
+    )
+    rows = make_ynab(rows)
+    return rows
+
+
+def convert_cc_zeitraum(csv_path: str) -> List[Dict[str, Any]]:
+    """Convert DKB credit card statement with von + bis."""
+    rows = read_csv(
+        csv_path,
+        parse_dkb_row,
+        delimiter=";",
+        encoding="latin_1",
+        skip=6,
+    )
+    rows = make_ynab(rows)
+    return rows
 
 
 def parse_shinsei_row(row: Dict[str, Any]) -> Transaction:
@@ -347,7 +351,8 @@ def main(kwargs: Mapping[str, str]) -> None:
             "shinsei_new_v2": convert_shinsei_new_v2,
             "shinsei_new": convert_shinsei_new,
             "shinsei": convert_shinsei,
-            "dkb_cc": convert_cc,
+            "dkb_cc_von_bis": convert_cc_von_bis,
+            "dkb_cc_zeitraum": convert_cc_zeitraum,
             "dkb_giro": convert_giro,
             "rakuten": convert_rakuten,
             "smbc_new": convert_smbc_new,
