@@ -38,6 +38,18 @@ import toml
 
 
 @dataclass
+class CsvTransactionMapping:
+    """Map raw csv rows to transaction attributes."""
+
+    date: Callable[[dict], datetime]
+    num: Callable[[dict], str]
+    description: Callable[[dict], str]
+    memo: Callable[[dict], str]
+    withdrawal: Callable[[Decimal], str]
+    deposit: Callable[[Decimal], str]
+
+
+@dataclass
 class CsvFormat:
     """Store format info for a CSV file."""
 
@@ -47,6 +59,7 @@ class CsvFormat:
     skip: int
     create_negative_rows: bool
     path: str
+    mapping: CsvTransactionMapping
 
 
 logging.basicConfig(level=logging.INFO)
