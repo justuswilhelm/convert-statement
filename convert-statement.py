@@ -21,6 +21,13 @@ from os import (
     makedirs,
     path,
 )
+from typing import (
+    Any,
+    Callable,
+    Dict,
+    List,
+    Mapping,
+)
 
 import toml
 
@@ -29,7 +36,11 @@ logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
 
-def make_ynab(rows, mapping, create_negative_rows=True):
+def make_ynab(
+    rows: List[Dict[str, Any]],
+    mapping: Mapping[str, str],
+    create_negative_rows: bool = True,
+) -> List[Dict[str, Any]]:
     """Make YNAB compatible dataframe."""
     selected_keys = mapping.keys()
     sub_selection = []
@@ -45,11 +56,11 @@ def make_ynab(rows, mapping, create_negative_rows=True):
             sub["Outflow"] = abs(sub["Inflow"]) if is_negative else 0
             sub["Inflow"] = sub["Inflow"] if not is_negative else 0
         sub_selection.append(sub)
-    sub_selection.sort(key=lambda row: row["Date"])
+    sub_selection.sort(key=lambda row: str(row["Date"]))
     return sub_selection
 
 
-def parse_dkb_row(row):
+def parse_dkb_row(row: Dict[str, Any]) -> Dict[str, Any]:
     """Parse dates and numerical values in DKB data."""
     row["Wertstellung"] = datetime.strptime(
         row["Wertstellung"],
@@ -72,7 +83,7 @@ def parse_dkb_row(row):
     return row
 
 
-def parse_shinsei_row(row):
+def parse_shinsei_row(row: Dict[str, Any]) -> Dict[str, Any]:
     """Parse numerical values in Shinsei data."""
     if "CR" in row:
         row["CR"] = int(row["CR"] or 0)
@@ -85,7 +96,7 @@ def parse_shinsei_row(row):
     return row
 
 
-def parse_new_shinsei_row(row):
+def parse_new_shinsei_row(row: Dict[str, Any]) -> Dict[str, Any]:
     """Parse numerical values in new Shinsei data."""
     try:
         row["DR"] = int(row["出金金額"] or 0)
@@ -99,7 +110,7 @@ def parse_new_shinsei_row(row):
     return row
 
 
-def parse_new_shinsei_row_v2(row):
+def parse_new_shinsei_row_v2(row: Dict[str, Any]) -> Dict[str, Any]:
     """Parse numerical values in new Shinsei v2 data."""
     try:
         row["DR"] = int(row["出金金額"] or 0)
@@ -113,28 +124,34 @@ def parse_new_shinsei_row_v2(row):
     return row
 
 
-def parse_smbc_row(row):
+def parse_smbc_row(row: Dict[str, Any]) -> Dict[str, Any]:
     """Parse numerical values in a SMBC data row."""
     row["お引出し"] = -int(row["お引出し"] or 0)
     row["お預入れ"] = int(row["お預入れ"] or 0)
     return row
 
 
-def parse_new_smbc_row(row):
+def parse_new_smbc_row(row: Dict[str, Any]) -> Dict[str, Any]:
     """Parse numerical values in a SMBC data row."""
     row["お引出し"] = int(row["お引出し"] or 0)
     row["お預入れ"] = int(row["お預入れ"] or 0)
     return row
 
 
-def parse_rakuten_row(row):
+def parse_rakuten_row(row: Dict[str, Any]) -> Dict[str, Any]:
     """Parse numerical values in a Rakuten data row."""
     row["取引日"] = datetime.strptime(row["取引日"], "%Y%m%d")
     row["入出金(円)"] = int(row["入出金(円)"])
     return row
 
 
-def read_csv(csv_path, row_fn, encoding, delimiter, skip):
+def read_csv(
+    csv_path: str,
+    row_fn: Callable[[Dict[str, str]], Dict[str, Any]],
+    encoding: str,
+    delimiter: str,
+    skip: int,
+) -> List[Dict[str, str]]:
     """Read a CSV file."""
     with open(csv_path, encoding=encoding) as fd:
         for _ in range(skip):
@@ -143,7 +160,7 @@ def read_csv(csv_path, row_fn, encoding, delimiter, skip):
         return list(map(row_fn, reader))
 
 
-def convert_shinsei(csv_path):
+def convert_shinsei(csv_path: str) -> List[Dict[str, Any]]:
     """Convert Shinsei checkings account statement."""
     fields = {
         "Value Date": "Date",
@@ -161,7 +178,7 @@ def convert_shinsei(csv_path):
     return make_ynab(rows, fields, create_negative_rows=False)
 
 
-def convert_shinsei_new(csv_path):
+def convert_shinsei_new(csv_path: str) -> List[Dict[str, Any]]:
     """Convert new Shinsei checkings account statement."""
     fields = {
         "Value Date": "Date",
@@ -179,7 +196,7 @@ def convert_shinsei_new(csv_path):
     return make_ynab(rows, fields, create_negative_rows=False)
 
 
-def convert_shinsei_new_v2(csv_path):
+def convert_shinsei_new_v2(csv_path: str) -> List[Dict[str, Any]]:
     """Convert new Shinsei checkings account statement."""
     fields = {
         "Value Date": "Date",
@@ -197,7 +214,7 @@ def convert_shinsei_new_v2(csv_path):
     return make_ynab(rows, fields, create_negative_rows=False)
 
 
-def convert_smbc(csv_path):
+def convert_smbc(csv_path: str) -> List[Dict[str, Any]]:
     """Convert SMBC checkings account statement."""
     fields = {
         "年月日": "Date",
@@ -215,7 +232,7 @@ def convert_smbc(csv_path):
     return make_ynab(rows, fields, create_negative_rows=False)
 
 
-def convert_smbc_new(csv_path):
+def convert_smbc_new(csv_path: str) -> List[Dict[str, Any]]:
     """Convert SMBC checkings account statement."""
     fields = {
         "年月日": "Date",
@@ -233,7 +250,7 @@ def convert_smbc_new(csv_path):
     return make_ynab(rows, fields, create_negative_rows=False)
 
 
-def convert_rakuten(csv_path):
+def convert_rakuten(csv_path: str) -> List[Dict[str, Any]]:
     """Convert Rakuten checkings account statement."""
     fields = {
         "取引日": "Date",
@@ -250,7 +267,7 @@ def convert_rakuten(csv_path):
     return make_ynab(rows, fields, create_negative_rows=True)
 
 
-def convert_giro(csv_path):
+def convert_giro(csv_path: str) -> List[Dict[str, Any]]:
     """Convert DKB giro account statement."""
     giro_fields = {
         "Wertstellung": "Date",
@@ -268,7 +285,7 @@ def convert_giro(csv_path):
     return make_ynab(rows, giro_fields)
 
 
-def convert_cc(csv_path):
+def convert_cc(csv_path: str) -> List[Dict[str, Any]]:
     """Convert DKB credit card statement."""
     cc_fields = {
         "Belegdatum": "Date",
@@ -298,7 +315,7 @@ def convert_cc(csv_path):
     return rows
 
 
-def get_output_path(file_path, in_dir, out_dir):
+def get_output_path(file_path: str, in_dir: str, out_dir: str) -> str:
     """Get an output path in the output directory."""
     return path.join(
         out_dir,
@@ -306,13 +323,13 @@ def get_output_path(file_path, in_dir, out_dir):
     )
 
 
-def main(kwargs):
+def main(kwargs: Mapping[str, str]) -> None:
     """Go through files in input folder and transform CSV files."""
     in_glob = path.join(kwargs["in_dir"], "*/*/*.csv")
     logging.debug("Looking for files matching glob '%s'", in_glob)
 
     for csv_path in glob(in_glob, recursive=True):
-        mapping = {
+        mapping: Mapping[str, Callable[[str], List[Dict[str, Any]]]] = {
             # shinsei_new comes before shinsei, on purpose
             "shinsei_new_v2": convert_shinsei_new_v2,
             "shinsei_new": convert_shinsei_new,

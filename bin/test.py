@@ -17,7 +17,7 @@ GIT_STATUS = (
 )
 
 
-def main():
+def main() -> None:
     """Run program."""
     subprocess.run(CONVERT, check=True)
     subprocess.run(GIT_STATUS, check=True)
