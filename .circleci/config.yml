@@ -52,9 +52,21 @@ jobs:
       - run:
           name: Run bin/test.py
           command: pipenv run bin/test.py
+  mypy:
+    executor: python
+    steps:
+      - checkout
+      - restore_cache:
+          keys:
+            - cache-{{ checksum "Pipfile.lock" }}
+      - install_dependencies
+      - run:
+          name: Run mypy
+          command: pipenv run mypy
 workflows:
   test_all:
     jobs:
       - pipenv_check
       - lint
       - tests
+      - mypy
