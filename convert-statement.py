@@ -165,6 +165,42 @@ def parse_new_shinsei_row_v2(row: Dict[str, Any]) -> Transaction:
     )
 
 
+def convert_shinsei(csv_path: str) -> List[Dict[str, Any]]:
+    """Convert Shinsei checkings account statement."""
+    rows = read_csv(
+        csv_path,
+        parse_shinsei_row,
+        encoding="utf-16",
+        delimiter="\t",
+        skip=8,
+    )
+    return make_ynab(rows, create_negative_rows=False)
+
+
+def convert_shinsei_new(csv_path: str) -> List[Dict[str, Any]]:
+    """Convert new Shinsei checkings account statement."""
+    rows = read_csv(
+        csv_path,
+        parse_new_shinsei_row,
+        encoding="shift-jis",
+        delimiter=",",
+        skip=0,
+    )
+    return make_ynab(rows, create_negative_rows=False)
+
+
+def convert_shinsei_new_v2(csv_path: str) -> List[Dict[str, Any]]:
+    """Convert new Shinsei checkings account statement."""
+    rows = read_csv(
+        csv_path,
+        parse_new_shinsei_row_v2,
+        encoding="utf-8-sig",
+        delimiter=",",
+        skip=0,
+    )
+    return make_ynab(rows, create_negative_rows=False)
+
+
 def parse_smbc_row(row: Dict[str, Any]) -> Transaction:
     """Parse numerical values in a SMBC data row."""
     row["お引出し"] = -int(row["お引出し"] or 0)
@@ -220,42 +256,6 @@ def read_csv(
             fd.readline()
         reader = DictReader(fd, delimiter=delimiter)
         return list(map(row_fn, reader))
-
-
-def convert_shinsei(csv_path: str) -> List[Dict[str, Any]]:
-    """Convert Shinsei checkings account statement."""
-    rows = read_csv(
-        csv_path,
-        parse_shinsei_row,
-        encoding="utf-16",
-        delimiter="\t",
-        skip=8,
-    )
-    return make_ynab(rows, create_negative_rows=False)
-
-
-def convert_shinsei_new(csv_path: str) -> List[Dict[str, Any]]:
-    """Convert new Shinsei checkings account statement."""
-    rows = read_csv(
-        csv_path,
-        parse_new_shinsei_row,
-        encoding="shift-jis",
-        delimiter=",",
-        skip=0,
-    )
-    return make_ynab(rows, create_negative_rows=False)
-
-
-def convert_shinsei_new_v2(csv_path: str) -> List[Dict[str, Any]]:
-    """Convert new Shinsei checkings account statement."""
-    rows = read_csv(
-        csv_path,
-        parse_new_shinsei_row_v2,
-        encoding="utf-8-sig",
-        delimiter=",",
-        skip=0,
-    )
-    return make_ynab(rows, create_negative_rows=False)
 
 
 def convert_smbc(csv_path: str) -> List[Dict[str, Any]]:
