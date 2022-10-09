@@ -1,0 +1,48 @@
+version: 2.1
+orbs:
+  cli: circleci/circleci-cli@0.1.9
+executors:
+  python:
+    docker:
+      - image: python:3.9.14
+
+commands:
+  install_dependencies:
+    description: Install pipenv
+    steps:
+      - run:
+          name: Install pipenv
+          command: pip3 install pipenv
+      - run:
+          name: Install pip packages
+          command: pipenv sync --dev
+jobs:
+  pipenv_check:
+    executor: python
+    steps:
+      - checkout
+      - restore_cache:
+          keys:
+            - cache-{{ checksum "Pipfile.lock" }}
+      - install_dependencies
+      - save_cache:
+          key: cache-{{ checksum "Pipfile.lock" }}
+          paths:
+            - ~/.local
+            - ~/.cache
+  lint:
+    executor: python
+    steps:
+      - checkout
+      - restore_cache:
+          keys:
+            - cache-{{ checksum "Pipfile.lock" }}
+      - install_dependencies
+      - run:
+          name: Run flake8
+          command: pipenv run flake8
+workflows:
+  test_all:
+    jobs:
+      - pipenv_check
+      - lint
