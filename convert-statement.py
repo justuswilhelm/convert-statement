@@ -88,36 +88,6 @@ class Transaction:
     deposit: Decimal
 
 
-def process_one_row(row: Transaction, create_negative_row: bool) -> CsvRow:
-    """Process one row."""
-    if create_negative_row:
-        is_negative = row.deposit < 0
-        withdrawal = abs(row.deposit) if is_negative else 0
-        deposit = row.deposit if not is_negative else 0
-    else:
-        withdrawal = row.withdrawal
-        deposit = row.deposit
-    return {
-        "date": str(row.date),
-        "num": row.num,
-        "description": row.description,
-        "memo": row.memo,
-        "withdrawal": str(withdrawal),
-        "deposit": str(deposit),
-    }
-
-
-def make_ynab(
-    rows: List[Transaction],
-    create_negative_rows: bool = True,
-) -> List[CsvRow]:
-    """Make YNAB compatible dataframe."""
-    return sorted(
-        (process_one_row(r, create_negative_rows) for r in rows),
-        key=lambda row: row["date"],
-    )
-
-
 giro_row_parser = CsvTransactionParser(
     date=CellParser(
         lambda row: datetime.strptime(row["Wertstellung"], "%d.%m.%Y")
@@ -346,19 +316,43 @@ def apply_parser(parser: CsvTransactionParser, row: CsvRow) -> Transaction:
     )
 
 
+def process_one_row(row: Transaction, create_negative_row: bool) -> CsvRow:
+    """Process one row."""
+    if create_negative_row:
+        is_negative = row.deposit < 0
+        withdrawal = abs(row.deposit) if is_negative else 0
+        deposit = row.deposit if not is_negative else 0
+    else:
+        withdrawal = row.withdrawal
+        deposit = row.deposit
+    return {
+        "date": str(row.date),
+        "num": row.num,
+        "description": row.description,
+        "memo": row.memo,
+        "withdrawal": str(withdrawal),
+        "deposit": str(deposit),
+    }
+
+
 def read_csv(
     csv_path: str,
     parser: CsvTransactionParser,
     encoding: str,
     delimiter: str,
     skip: int,
-) -> List[Transaction]:
+    create_negative_rows: bool = True,
+) -> List[CsvRow]:
     """Read a CSV file."""
     with open(csv_path, encoding=encoding) as fd:
         for _ in range(skip):
             fd.readline()
         reader = DictReader(fd, delimiter=delimiter)
-        return [apply_parser(parser, row) for row in reader]
+        rows = [apply_parser(parser, row) for row in reader]
+        return sorted(
+            (process_one_row(r, create_negative_rows) for r in rows),
+            key=lambda row: row["date"],
+        )
 
 
 def get_output_path(file_path: str, in_dir: str, out_dir: str) -> str:
@@ -390,15 +384,12 @@ fieldnames: List[str] = [f.name for f in fields(Transaction)]
 
 def process_csv(csv_path: str, fmt: CsvFormat) -> List[CsvRow]:
     """Process one CSV and return csv rows."""
-    rows = read_csv(
+    return read_csv(
         csv_path,
         fmt.parser,
         encoding=fmt.encoding,
         delimiter=fmt.delimiter,
         skip=fmt.skip,
-    )
-    return make_ynab(
-        rows,
         create_negative_rows=fmt.create_negative_rows,
     )
 
