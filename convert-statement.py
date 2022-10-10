@@ -47,8 +47,8 @@ from parser.shinsei import (
     convert_shinsei_v3,
 )
 from parser.smbc import (
-    convert_smbc,
-    convert_smbc_new,
+    convert_smbc_v1,
+    convert_smbc_v2,
 )
 from typing import (
     Iterable,
@@ -103,8 +103,8 @@ formats: Iterable[CsvFormat] = (
     convert_shinsei_v2,
     convert_shinsei_v2_en,
     convert_shinsei_v3,
-    convert_smbc,
-    convert_smbc_new,
+    convert_smbc_v1,
+    convert_smbc_v2,
 )
 
 
