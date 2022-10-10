@@ -28,17 +28,17 @@ smbc_new_parser = CsvTransactionParser(
     memo=ConstantParser(""),
     num=ConstantParser(""),
 )
-convert_smbc = CsvFormat(
+convert_smbc_v1 = CsvFormat(
     parser=smbc_parser,
     encoding="shift-jis",
     delimiter=",",
     skip=0,
-    path="smbc",
+    path="smbc_v1",
 )
-convert_smbc_new = CsvFormat(
+convert_smbc_v2 = CsvFormat(
     parser=smbc_new_parser,
     encoding="shift-jis",
     delimiter=",",
     skip=0,
-    path="smbc_new",
+    path="smbc_v2",
 )
