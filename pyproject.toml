@@ -13,3 +13,8 @@ sections = ["STDLIB", "THIRDPARTY", "FIRSTPARTY", "LOCALFOLDER"]
 known_third_party = [
     "toml",
 ]
+
+[tool.pytest.ini_options]
+addopts = [
+    "--import-mode=importlib",
+]
