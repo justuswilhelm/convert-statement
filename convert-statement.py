@@ -211,22 +211,24 @@ def parse_new_shinsei_row(row: Dict[str, Any]) -> Transaction:
     )
 
 
-def parse_new_shinsei_row_v2(row: Dict[str, Any]) -> Transaction:
+def parse_new_shinsei_row_v2(row: CsvReaderInput) -> Transaction:
     """Parse numerical values in new Shinsei v2 data."""
     try:
-        row["DR"] = int(row["出金金額"] or 0)
-        row["CR"] = int(row["入金金額"] or 0)
-        row["Value Date"] = row["取引日"]
-        row["Description"] = row["摘要"]
+        withdrawal = Decimal(row["出金金額"] or 0)
+        deposit = Decimal(row["入金金額"] or 0)
+        date = row["取引日"]
+        description = row["摘要"]
     # English Version!
     except KeyError:
-        row["DR"] = int(row["Debit"] or 0)
-        row["CR"] = int(row["Credit"] or 0)
+        withdrawal = Decimal(row["Debit"] or 0)
+        deposit = Decimal(row["Credit"] or 0)
+        date = row["Value Date"]
+        description = row["Description"]
     return Transaction(
-        date=row["Value Date"],
-        withdrawal=row["DR"],
-        deposit=row["CR"],
-        description=row["Description"],
+        date=datetime.strptime(date, "%Y/%m/%d"),
+        withdrawal=withdrawal,
+        deposit=deposit,
+        description=description,
         memo="",
         num="",
     )
