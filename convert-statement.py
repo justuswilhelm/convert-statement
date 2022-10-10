@@ -311,6 +311,9 @@ formats: Iterable[CsvFormat] = (
 )
 
 
+format_mapping = {format.path: format for format in formats}
+
+
 def read_csv(
     csv_path: str,
     parser: CsvTransactionParser,
@@ -357,6 +360,11 @@ def get_output_path(file_path: str, in_dir: str, out_dir: str) -> str:
     )
 
 
+def get_format_dir(file_path: str) -> str:
+    """Get the base format dir name."""
+    return path.basename(path.dirname(path.dirname(file_path)))
+
+
 def write_csv(out_path: str, output: List[TransactionDict]) -> None:
     """
     Write rows to a csv.
@@ -378,11 +386,13 @@ def main(kwargs: Mapping[str, str]) -> None:
     logging.debug("Looking for files matching glob '%s'", in_glob)
 
     for csv_path in glob(in_glob, recursive=True):
-        for fmt in formats:
-            if fmt.path in csv_path:
-                break
-        else:
-            raise ValueError("Unknown format for file '{}'".format(csv_path))
+        format_dir = get_format_dir(csv_path)
+        try:
+            fmt = format_mapping[format_dir]
+        except KeyError as e:
+            raise ValueError(
+                "Unknown format for file '{}'".format(csv_path)
+            ) from e
         logging.info("Handling file '%s' with %s", csv_path, fmt)
 
         output = read_csv(
