@@ -13,6 +13,7 @@ from dataclasses import (
     fields,
 )
 from datetime import (
+    date,
     datetime,
 )
 from decimal import (
@@ -99,7 +100,7 @@ class CsvFormat:
 class Transaction:
     """A singular transaction."""
 
-    date: datetime
+    date: date
     num: str
     description: str
     memo: str
@@ -353,7 +354,7 @@ def read_csv(csv_path: str, fmt: CsvFormat) -> List[TransactionDict]:
     parser = fmt.parser
     transaction_rows: Iterable[Transaction] = (
         Transaction(
-            date=apply_parser(row, parser.date),
+            date=apply_parser(row, parser.date).date(),
             withdrawal=apply_parser(row, parser.withdrawal),
             deposit=apply_parser(row, parser.deposit),
             description=apply_parser(row, parser.description),
