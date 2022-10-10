@@ -73,7 +73,6 @@ class CsvFormat:
     encoding: str
     delimiter: str
     skip: int
-    create_negative_rows: bool
     path: str
 
 
@@ -139,7 +138,6 @@ convert_giro = CsvFormat(
     encoding="latin_1",
     delimiter=";",
     skip=6,
-    create_negative_rows=True,
     path="dkb_giro",
 )
 convert_cc_von_bis = CsvFormat(
@@ -147,7 +145,6 @@ convert_cc_von_bis = CsvFormat(
     delimiter=";",
     encoding="latin_1",
     skip=7,
-    create_negative_rows=True,
     path="dkb_cc_von_bis",
 )
 convert_cc_zeitraum = CsvFormat(
@@ -155,7 +152,6 @@ convert_cc_zeitraum = CsvFormat(
     delimiter=";",
     encoding="latin_1",
     skip=6,
-    create_negative_rows=True,
     path="dkb_cc_zeitraum",
 )
 
@@ -202,7 +198,6 @@ convert_shinsei = CsvFormat(
     encoding="utf-16",
     delimiter="\t",
     skip=8,
-    create_negative_rows=False,
     path="shinsei",
 )
 convert_shinsei_en = CsvFormat(
@@ -210,7 +205,6 @@ convert_shinsei_en = CsvFormat(
     encoding="utf-16",
     delimiter="\t",
     skip=8,
-    create_negative_rows=False,
     path="shinsei_en",
 )
 convert_shinsei_new = CsvFormat(
@@ -218,7 +212,6 @@ convert_shinsei_new = CsvFormat(
     encoding="shift-jis",
     delimiter=",",
     skip=0,
-    create_negative_rows=False,
     path="shinsei_new",
 )
 convert_shinsei_new_en = CsvFormat(
@@ -226,7 +219,6 @@ convert_shinsei_new_en = CsvFormat(
     encoding="shift-jis",
     delimiter=",",
     skip=0,
-    create_negative_rows=False,
     path="shinsei_new_en",
 )
 convert_shinsei_new_v2 = CsvFormat(
@@ -234,7 +226,6 @@ convert_shinsei_new_v2 = CsvFormat(
     encoding="utf-8-sig",
     delimiter=",",
     skip=0,
-    create_negative_rows=False,
     path="shinsei_new_v2",
 )
 
@@ -261,7 +252,6 @@ convert_smbc = CsvFormat(
     encoding="shift-jis",
     delimiter=",",
     skip=0,
-    create_negative_rows=False,
     path="smbc",
 )
 convert_smbc_new = CsvFormat(
@@ -269,7 +259,6 @@ convert_smbc_new = CsvFormat(
     encoding="shift-jis",
     delimiter=",",
     skip=0,
-    create_negative_rows=False,
     path="smbc_new",
 )
 
@@ -288,7 +277,6 @@ convert_rakuten = CsvFormat(
     encoding="shift-jis",
     delimiter=",",
     skip=0,
-    create_negative_rows=True,
     path="rakuten",
 )
 
@@ -309,57 +297,47 @@ formats: Iterable[CsvFormat] = (
 )
 
 
-def apply_parser(parser: CsvTransactionParser, row: CsvRow) -> Transaction:
-    """Apply a parser to a CSV row."""
-    return Transaction(
-        date=parser.date.method(row),
-        withdrawal=parser.withdrawal.method(row),
-        deposit=parser.deposit.method(row),
-        description=parser.description.method(row),
-        memo=parser.memo.method(row),
-        num=parser.num.method(row),
-    )
-
-
-def process_one_row(
-    row: Transaction, create_negative_row: bool
-) -> TransactionDict:
-    """Process one row."""
-    if create_negative_row:
-        is_negative = row.deposit < 0
-        withdrawal = abs(row.deposit) if is_negative else 0
-        deposit = row.deposit if not is_negative else 0
-    else:
-        withdrawal = row.withdrawal
-        deposit = row.deposit
-    return {
-        "date": str(row.date),
-        "num": row.num,
-        "description": row.description,
-        "memo": row.memo,
-        "withdrawal": str(withdrawal),
-        "deposit": str(deposit),
-    }
-
-
 def read_csv(
     csv_path: str,
     parser: CsvTransactionParser,
     encoding: str,
     delimiter: str,
     skip: int,
-    create_negative_rows: bool = True,
 ) -> List[TransactionDict]:
     """Read a CSV file."""
     with open(csv_path, encoding=encoding) as fd:
         for _ in range(skip):
             fd.readline()
         reader = DictReader(fd, delimiter=delimiter)
-        rows = [apply_parser(parser, row) for row in reader]
-        return sorted(
-            (process_one_row(r, create_negative_rows) for r in rows),
-            key=lambda row: row["date"],
+        rows = [row for row in reader]
+    transaction_rows: Iterable[Transaction] = (
+        Transaction(
+            date=parser.date.method(row),
+            withdrawal=parser.withdrawal.method(row),
+            deposit=parser.deposit.method(row),
+            description=parser.description.method(row),
+            memo=parser.memo.method(row),
+            num=parser.num.method(row),
         )
+        for row in rows
+    )
+    dict_rows: Iterable[TransactionDict] = (
+        {
+            "date": str(row.date),
+            "num": row.num,
+            "description": row.description,
+            "memo": row.memo,
+            "withdrawal": str(
+                max(
+                    abs(row.deposit) if row.deposit < 0 else row.withdrawal,
+                    Decimal(0),
+                )
+            ),
+            "deposit": str(max(row.deposit, Decimal(0))),
+        }
+        for row in transaction_rows
+    )
+    return sorted(dict_rows, key=lambda row: row["date"])
 
 
 def get_output_path(file_path: str, in_dir: str, out_dir: str) -> str:
@@ -404,7 +382,6 @@ def main(kwargs: Mapping[str, str]) -> None:
             encoding=fmt.encoding,
             delimiter=fmt.delimiter,
             skip=fmt.skip,
-            create_negative_rows=fmt.create_negative_rows,
         )
 
         out_path = get_output_path(
