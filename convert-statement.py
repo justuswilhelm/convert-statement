@@ -208,16 +208,14 @@ def parse_shinsei_en_row(row: CsvRow) -> Transaction:
     )
 
 
-def parse_new_shinsei_row(row: CsvRow) -> Transaction:
-    """Parse numerical values in Japanese new Shinsei data."""
-    return Transaction(
-        date=datetime.strptime(row["取引日"], "%Y/%m/%d"),
-        withdrawal=Decimal(row["出金金額"] or 0),
-        deposit=Decimal(row["入金金額"] or 0),
-        description=row["摘要"],
-        memo="",
-        num="",
-    )
+new_shinsei_row_parser = CsvTransactionParser(
+    date=CellParser(lambda row: datetime.strptime(row["取引日"], "%Y/%m/%d")),
+    withdrawal=CellParser(lambda row: Decimal(row["出金金額"] or 0)),
+    deposit=CellParser(lambda row: Decimal(row["入金金額"] or 0)),
+    description=CellParser(lambda row: row["摘要"]),
+    memo=CellParser(lambda row: ""),
+    num=CellParser(lambda row: ""),
+)
 
 
 new_shinsei_en_row_parser = CsvTransactionParser(
@@ -263,7 +261,7 @@ convert_shinsei_en = CsvFormat(
 
 
 convert_shinsei_new = CsvFormat(
-    parser=SimpleCsvTransactionParser(parse_new_shinsei_row),
+    parser=new_shinsei_row_parser,
     encoding="shift-jis",
     delimiter=",",
     skip=0,
