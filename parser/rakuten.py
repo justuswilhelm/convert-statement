@@ -30,10 +30,10 @@ rakuten_parser = CsvTransactionParser(
     memo=ConstantParser(""),
     num=ConstantParser(""),
 )
-convert_rakuten = CsvFormat(
+convert_rakuten_v1 = CsvFormat(
     parser=rakuten_parser,
     encoding="shift-jis",
     delimiter=",",
     skip=0,
-    path="rakuten",
+    path="rakuten_v1",
 )
