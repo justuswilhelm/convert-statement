@@ -27,28 +27,38 @@ from os import (
 )
 from typing import (
     Callable,
+    Generic,
     Iterable,
     List,
     Mapping,
+    TypeVar,
     Union,
 )
 
 import toml
 
 
+T = TypeVar("T")
 CsvRow = Mapping[str, str]
+
+
+@dataclass
+class CellParser(Generic[T]):
+    """Parse a single cell in a csv row."""
+
+    method: Callable[[CsvRow], T]
 
 
 @dataclass
 class CsvTransactionParser:
     """Parse csv rows to transaction attributes."""
 
-    date: Callable[[CsvRow], datetime]
-    num: Callable[[CsvRow], str]
-    description: Callable[[CsvRow], str]
-    memo: Callable[[CsvRow], str]
-    withdrawal: Callable[[Decimal], str]
-    deposit: Callable[[Decimal], str]
+    date: CellParser[datetime]
+    num: CellParser[str]
+    description: CellParser[str]
+    memo: CellParser[str]
+    withdrawal: CellParser[Decimal]
+    deposit: CellParser[Decimal]
 
 
 @dataclass
@@ -328,20 +338,18 @@ convert_smbc_new = CsvFormat(
 )
 
 
-def parse_rakuten_row(row: CsvRow) -> Transaction:
-    """Parse numerical values in a Rakuten data row."""
-    return Transaction(
-        date=datetime.strptime(row["取引日"], "%Y%m%d"),
-        withdrawal=Decimal(0),
-        deposit=Decimal(row["入出金(円)"]),
-        description=row["入出金先内容"],
-        memo="",
-        num="",
-    )
+rakuten_parser = CsvTransactionParser(
+    date=CellParser(lambda row: datetime.strptime(row["取引日"], "%Y%m%d")),
+    withdrawal=CellParser(lambda _: Decimal(0)),
+    deposit=CellParser(lambda row: Decimal(row["入出金(円)"])),
+    description=CellParser(lambda row: row["入出金先内容"]),
+    memo=CellParser(lambda row: ""),
+    num=CellParser(lambda row: ""),
+)
 
 
 convert_rakuten = CsvFormat(
-    parser=SimpleCsvTransactionParser(parse_rakuten_row),
+    parser=rakuten_parser,
     encoding="shift-jis",
     delimiter=",",
     skip=0,
@@ -363,6 +371,33 @@ def read_csv(
             fd.readline()
         reader = DictReader(fd, delimiter=delimiter)
         return list(map(simple_parser.method, reader))
+
+
+def apply_parser(parser: CsvTransactionParser, row: CsvRow) -> Transaction:
+    """Apply a parser to a CSV row."""
+    return Transaction(
+        date=parser.date.method(row),
+        withdrawal=parser.withdrawal.method(row),
+        deposit=parser.deposit.method(row),
+        description=parser.description.method(row),
+        memo=parser.memo.method(row),
+        num=parser.num.method(row),
+    )
+
+
+def read_csv_new(
+    csv_path: str,
+    parser: CsvTransactionParser,
+    encoding: str,
+    delimiter: str,
+    skip: int,
+) -> List[Transaction]:
+    """Read a CSV file."""
+    with open(csv_path, encoding=encoding) as fd:
+        for _ in range(skip):
+            fd.readline()
+        reader = DictReader(fd, delimiter=delimiter)
+        return [apply_parser(parser, row) for row in reader]
 
 
 def get_output_path(file_path: str, in_dir: str, out_dir: str) -> str:
@@ -411,8 +446,13 @@ def main(kwargs: Mapping[str, str]) -> None:
                 skip=fmt.skip,
             )
         else:
-            rows = []
-            logging.error("%s not supported", fmt.parser)
+            rows = read_csv_new(
+                csv_path,
+                fmt.parser,
+                encoding=fmt.encoding,
+                delimiter=fmt.delimiter,
+                skip=fmt.skip,
+            )
         output = make_ynab(
             rows,
             create_negative_rows=fmt.create_negative_rows,
