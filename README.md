@@ -76,5 +76,8 @@ The output can be found in the out folder.
 ## Testing
 
 ```
-pipenv run ./convert-statement.py --config test/data/config.toml
+pipenv run python -m pytest
+pipenv run bin/test.py
+pipenv run flake8 .
+pipenv run mypy
 ```

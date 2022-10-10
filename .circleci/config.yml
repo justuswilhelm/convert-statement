@@ -52,6 +52,17 @@ jobs:
       - run:
           name: Run bin/test_sample_data.py
           command: pipenv run bin/test_sample_data.py
+  pytest:
+    executor: python
+    steps:
+      - checkout
+      - restore_cache:
+          keys:
+            - cache-{{ checksum "Pipfile.lock" }}
+      - install_dependencies
+      - run:
+          name: Run pytest
+          command: pipenv run python -m pytest
   mypy:
     executor: python
     steps:
