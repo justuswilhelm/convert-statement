@@ -105,17 +105,30 @@ TransactionDict = TypedDict(
 fieldnames: List[str] = [f.name for f in fields(Transaction)]
 
 
+def derive_withdrawal(withdrawal: Decimal) -> Decimal:
+    """Derive withdrawal values for when deposit is negative."""
+    if withdrawal < 0:
+        return abs(withdrawal)
+    return Decimal(0)
+
+
+def at_least_0(amount: Decimal) -> Decimal:
+    """Make sure this value is at least 0."""
+    return max(amount, Decimal(0))
+
+
 # DKB
+def betrag_eur(row: CsvRow) -> Decimal:
+    """Extract Betrag (EUR)."""
+    return Decimal(row["Betrag (EUR)"].replace(".", "").replace(",", "."))
+
+
 giro_row_parser = CsvTransactionParser(
     date=CellParser(
         lambda row: datetime.strptime(row["Wertstellung"], "%d.%m.%Y")
     ),
-    withdrawal=CellParser(lambda row: Decimal(0)),
-    deposit=CellParser(
-        lambda row: Decimal(
-            row["Betrag (EUR)"].replace(".", "").replace(",", "."),
-        )
-    ),
+    withdrawal=CellParser(lambda row: derive_withdrawal(betrag_eur(row))),
+    deposit=CellParser(lambda row: at_least_0(betrag_eur(row))),
     description=CellParser(lambda row: row["Auftraggeber / Begünstigter"]),
     memo=CellParser(lambda row: row["Verwendungszweck"]),
     num=CellParser(lambda row: ""),
@@ -124,12 +137,8 @@ cc_row_parser = CsvTransactionParser(
     date=CellParser(
         lambda row: datetime.strptime(row["Belegdatum"], "%d.%m.%Y")
     ),
-    withdrawal=CellParser(lambda row: Decimal(0)),
-    deposit=CellParser(
-        lambda row: Decimal(
-            row["Betrag (EUR)"].replace(".", "").replace(",", "."),
-        )
-    ),
+    withdrawal=CellParser(lambda row: derive_withdrawal(betrag_eur(row))),
+    deposit=CellParser(lambda row: at_least_0(betrag_eur(row))),
     description=CellParser(lambda row: row["Beschreibung"]),
     memo=CellParser(lambda row: ""),
     num=CellParser(lambda row: ""),
@@ -139,7 +148,7 @@ convert_giro = CsvFormat(
     encoding="latin_1",
     delimiter=";",
     skip=6,
-    create_negative_rows=True,
+    create_negative_rows=False,
     path="dkb_giro",
 )
 convert_cc_von_bis = CsvFormat(
@@ -147,7 +156,7 @@ convert_cc_von_bis = CsvFormat(
     delimiter=";",
     encoding="latin_1",
     skip=7,
-    create_negative_rows=True,
+    create_negative_rows=False,
     path="dkb_cc_von_bis",
 )
 convert_cc_zeitraum = CsvFormat(
@@ -155,7 +164,7 @@ convert_cc_zeitraum = CsvFormat(
     delimiter=";",
     encoding="latin_1",
     skip=6,
-    create_negative_rows=True,
+    create_negative_rows=False,
     path="dkb_cc_zeitraum",
 )
 
