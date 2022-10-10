@@ -171,22 +171,12 @@ convert_cc_zeitraum = CsvFormat(
 
 
 def parse_shinsei_row(row: CsvReaderInput) -> Transaction:
-    """Parse numerical values in Shinsei data."""
-    if "CR" in row:
-        withdrawal = Decimal(row["CR"] or 0)
-        deposit = Decimal(row["DR"] or 0)
-        date = row["Value Date"]
-        description = row["Description"]
-    else:
-        withdrawal = Decimal(row["お支払金額"] or 0)
-        deposit = Decimal(row["お預り金額"] or 0)
-        date = row["取引日"]
-        description = row["摘要"]
+    """Parse numerical values in Japanese Shinsei data."""
     return Transaction(
-        date=datetime.strptime(date, "%Y/%m/%d"),
-        withdrawal=withdrawal,
-        deposit=deposit,
-        description=description,
+        date=datetime.strptime(row["取引日"], "%Y/%m/%d"),
+        withdrawal=Decimal(row["お支払金額"] or 0),
+        deposit=Decimal(row["お預り金額"] or 0),
+        description=row["摘要"],
         memo="",
         num="",
     )
