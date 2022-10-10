@@ -385,6 +385,24 @@ formats: Iterable[CsvFormat] = (
 )
 
 
+fieldnames: List[str] = [f.name for f in fields(Transaction)]
+
+
+def write_csv(out_path: str, output: List[CsvRow]) -> None:
+    """
+    Write rows to a csv.
+
+    Ensure path to csv exists.
+    """
+    makedirs(path.dirname(out_path), exist_ok=True)
+    logging.info("Writing results to '%s'", out_path)
+    with open(out_path, "w") as fd:
+        writer = DictWriter(fd, fieldnames=fieldnames)
+        writer.writeheader()
+        for row in output:
+            writer.writerow(row)
+
+
 def main(kwargs: Mapping[str, str]) -> None:
     """Go through files in input folder and transform CSV files."""
     in_glob = path.join(kwargs["in_dir"], "*/*/*.csv")
@@ -415,14 +433,7 @@ def main(kwargs: Mapping[str, str]) -> None:
             kwargs["in_dir"],
             kwargs["out_dir"],
         )
-        makedirs(path.dirname(out_path), exist_ok=True)
-        logging.info("Writing results to '%s'", out_path)
-        fieldnames = [f.name for f in fields(Transaction)]
-        with open(out_path, "w") as fd:
-            writer = DictWriter(fd, fieldnames=fieldnames)
-            writer.writeheader()
-            for row in output:
-                writer.writerow(row)
+        write_csv(out_path, output)
     logging.info("Finished")
 
 
