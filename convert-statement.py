@@ -224,16 +224,6 @@ new_shinsei_en_row_parser = CsvTransactionParser(
 )
 
 
-new_shinsei_row_v2_parser = CsvTransactionParser(
-    date=CellParser(lambda row: datetime.strptime(row["取引日"], "%Y/%m/%d")),
-    withdrawal=CellParser(lambda row: Decimal(row["出金金額"] or 0)),
-    deposit=CellParser(lambda row: Decimal(row["入金金額"] or 0)),
-    description=CellParser(lambda row: row["摘要"]),
-    memo=CellParser(lambda row: ""),
-    num=CellParser(lambda row: ""),
-)
-
-
 convert_shinsei = CsvFormat(
     parser=shinsei_row_parser,
     encoding="utf-16",
@@ -275,7 +265,7 @@ convert_shinsei_new_en = CsvFormat(
 
 
 convert_shinsei_new_v2 = CsvFormat(
-    parser=new_shinsei_row_v2_parser,
+    parser=new_shinsei_row_parser,
     encoding="utf-8-sig",
     delimiter=",",
     skip=0,
