@@ -184,16 +184,14 @@ convert_cc_zeitraum = CsvFormat(
 )
 
 
-def parse_shinsei_row(row: CsvRow) -> Transaction:
-    """Parse numerical values in Japanese Shinsei data."""
-    return Transaction(
-        date=datetime.strptime(row["取引日"], "%Y/%m/%d"),
-        withdrawal=Decimal(row["お支払金額"] or 0),
-        deposit=Decimal(row["お預り金額"] or 0),
-        description=row["摘要"],
-        memo="",
-        num="",
-    )
+shinsei_row_parser = CsvTransactionParser(
+    date=CellParser(lambda row: datetime.strptime(row["取引日"], "%Y/%m/%d")),
+    withdrawal=CellParser(lambda row: Decimal(row["お支払金額"] or 0)),
+    deposit=CellParser(lambda row: Decimal(row["お預り金額"] or 0)),
+    description=CellParser(lambda row: row["摘要"]),
+    memo=CellParser(lambda row: ""),
+    num=CellParser(lambda row: ""),
+)
 
 
 shinsei_en_row_parser = CsvTransactionParser(
@@ -241,7 +239,7 @@ new_shinsei_row_v2_parser = CsvTransactionParser(
 
 
 convert_shinsei = CsvFormat(
-    parser=SimpleCsvTransactionParser(parse_shinsei_row),
+    parser=shinsei_row_parser,
     encoding="utf-16",
     delimiter="\t",
     skip=8,
