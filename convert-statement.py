@@ -195,23 +195,12 @@ def parse_shinsei_en_row(row: CsvReaderInput) -> Transaction:
 
 
 def parse_new_shinsei_row(row: CsvReaderInput) -> Transaction:
-    """Parse numerical values in new Shinsei data."""
-    try:
-        withdrawal = Decimal(row["出金金額"] or 0)
-        deposit = Decimal(row["入金金額"] or 0)
-        date = row["取引日"]
-        description = row["摘要"]
-    # English Version!
-    except KeyError:
-        withdrawal = Decimal(row["Debit"] or 0)
-        deposit = Decimal(row["Credit"] or 0)
-        date = row["Value Date"]
-        description = row["Description"]
+    """Parse numerical values in Japanese new Shinsei data."""
     return Transaction(
-        date=datetime.strptime(date, "%Y/%m/%d"),
-        withdrawal=withdrawal,
-        deposit=deposit,
-        description=description,
+        date=datetime.strptime(row["取引日"], "%Y/%m/%d"),
+        withdrawal=Decimal(row["出金金額"] or 0),
+        deposit=Decimal(row["入金金額"] or 0),
+        description=row["摘要"],
         memo="",
         num="",
     )
