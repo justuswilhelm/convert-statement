@@ -25,32 +25,6 @@ from os import (
     makedirs,
     path,
 )
-from parser.dkb import (
-    convert_cc_von_bis_v1,
-    convert_cc_zeitraum_v1,
-    convert_giro_v1,
-)
-from parser.format import (
-    CsvFormat,
-    CsvRow,
-    apply_date_parser,
-    apply_parser,
-)
-from parser.rakuten import (
-    convert_rakuten_jcb_v1,
-    convert_rakuten_v1,
-)
-from parser.shinsei import (
-    convert_shinsei_v1,
-    convert_shinsei_v1_en,
-    convert_shinsei_v2,
-    convert_shinsei_v2_en,
-    convert_shinsei_v3,
-)
-from parser.smbc import (
-    convert_smbc_v1,
-    convert_smbc_v2,
-)
 from typing import (
     Iterable,
     List,
@@ -59,6 +33,33 @@ from typing import (
 )
 
 import toml
+
+from parse.dkb import (
+    convert_cc_von_bis_v1,
+    convert_cc_zeitraum_v1,
+    convert_giro_v1,
+)
+from parse.format import (
+    CsvFormat,
+    CsvRow,
+    apply_date_parser,
+    apply_parser,
+)
+from parse.rakuten import (
+    convert_rakuten_jcb_v1,
+    convert_rakuten_v1,
+)
+from parse.shinsei import (
+    convert_shinsei_v1,
+    convert_shinsei_v1_en,
+    convert_shinsei_v2,
+    convert_shinsei_v2_en,
+    convert_shinsei_v3,
+)
+from parse.smbc import (
+    convert_smbc_v1,
+    convert_smbc_v2,
+)
 
 
 logging.basicConfig(level=logging.INFO)
