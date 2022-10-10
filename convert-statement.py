@@ -311,32 +311,6 @@ formats: Iterable[CsvFormat] = (
 )
 
 
-def apply_parser(parser: CsvTransactionParser, row: CsvRow) -> Transaction:
-    """Apply a parser to a CSV row."""
-    return Transaction(
-        date=parser.date.method(row),
-        withdrawal=parser.withdrawal.method(row),
-        deposit=parser.deposit.method(row),
-        description=parser.description.method(row),
-        memo=parser.memo.method(row),
-        num=parser.num.method(row),
-    )
-
-
-def process_one_row(
-    row: Transaction,
-) -> TransactionDict:
-    """Process one row."""
-    return {
-        "date": str(row.date),
-        "num": row.num,
-        "description": row.description,
-        "memo": row.memo,
-        "withdrawal": str(row.withdrawal),
-        "deposit": str(row.deposit),
-    }
-
-
 def read_csv(
     csv_path: str,
     parser: CsvTransactionParser,
@@ -349,11 +323,30 @@ def read_csv(
         for _ in range(skip):
             fd.readline()
         reader = DictReader(fd, delimiter=delimiter)
-        rows = [apply_parser(parser, row) for row in reader]
-        return sorted(
-            (process_one_row(r) for r in rows),
-            key=lambda row: row["date"],
+        rows = [row for row in reader]
+    transaction_rows: Iterable[Transaction] = (
+        Transaction(
+            date=parser.date.method(row),
+            withdrawal=parser.withdrawal.method(row),
+            deposit=parser.deposit.method(row),
+            description=parser.description.method(row),
+            memo=parser.memo.method(row),
+            num=parser.num.method(row),
         )
+        for row in rows
+    )
+    dict_rows: Iterable[TransactionDict] = (
+        {
+            "date": str(row.date),
+            "num": row.num,
+            "description": row.description,
+            "memo": row.memo,
+            "withdrawal": str(row.withdrawal),
+            "deposit": str(row.deposit),
+        }
+        for row in transaction_rows
+    )
+    return sorted(dict_rows, key=lambda row: row["date"])
 
 
 def get_output_path(file_path: str, in_dir: str, out_dir: str) -> str:
