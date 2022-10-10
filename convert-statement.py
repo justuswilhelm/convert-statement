@@ -39,8 +39,7 @@ from typing import (
 import toml
 
 
-CsvReaderInput = Dict[str, str]
-CsvReaderInputMapping = Mapping[str, str]
+CsvReaderInput = Mapping[str, str]
 
 
 @dataclass
@@ -59,7 +58,7 @@ class CsvTransactionParser:
 class SimpleCsvTransactionParser:
     """Parse csv rows to transaction attributes, legacy."""
 
-    method: Callable[[Dict[str, Any]], "Transaction"]
+    method: Callable[[CsvReaderInput], "Transaction"]
 
 
 @dataclass
@@ -275,7 +274,7 @@ convert_shinsei_new_v2 = CsvFormat(
 )
 
 
-def parse_smbc_row(row: CsvReaderInputMapping) -> Transaction:
+def parse_smbc_row(row: CsvReaderInput) -> Transaction:
     """Parse numerical values in a SMBC data row."""
     return Transaction(
         date=datetime.strptime(row["年月日"], "%Y/%m/%d"),
@@ -287,7 +286,7 @@ def parse_smbc_row(row: CsvReaderInputMapping) -> Transaction:
     )
 
 
-def parse_new_smbc_row(row: CsvReaderInputMapping) -> Transaction:
+def parse_new_smbc_row(row: CsvReaderInput) -> Transaction:
     """Parse numerical values in a SMBC data row."""
     return Transaction(
         date=datetime.strptime(row["年月日"], "%Y/%m/%d"),
@@ -319,7 +318,7 @@ convert_smbc_new = CsvFormat(
 )
 
 
-def parse_rakuten_row(row: CsvReaderInputMapping) -> Transaction:
+def parse_rakuten_row(row: CsvReaderInput) -> Transaction:
     """Parse numerical values in a Rakuten data row."""
     return Transaction(
         date=datetime.strptime(row["取引日"], "%Y%m%d"),
