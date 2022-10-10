@@ -33,6 +33,7 @@ from typing import (
     Mapping,
     TypedDict,
     TypeVar,
+    Union,
 )
 
 import toml
@@ -47,22 +48,32 @@ logger = logging.getLogger(__name__)
 
 
 @dataclass
+class ConstantParser(Generic[T]):
+    """Return a constant value for a csv cell."""
+
+    value: T
+
+
+@dataclass
 class CellParser(Generic[T]):
     """Parse a single cell in a csv row."""
 
     method: Callable[[CsvRow], T]
 
 
+Parsable = Union[ConstantParser[T], CellParser[T]]
+
+
 @dataclass
 class CsvTransactionParser:
     """Parse csv rows to transaction attributes."""
 
-    date: CellParser[datetime]
-    num: CellParser[str]
-    description: CellParser[str]
-    memo: CellParser[str]
-    withdrawal: CellParser[Decimal]
-    deposit: CellParser[Decimal]
+    date: Parsable[datetime]
+    num: Parsable[str]
+    description: Parsable[str]
+    memo: Parsable[str]
+    withdrawal: Parsable[Decimal]
+    deposit: Parsable[Decimal]
 
 
 @dataclass
@@ -130,7 +141,7 @@ giro_row_parser = CsvTransactionParser(
     deposit=CellParser(lambda row: at_least_0(betrag_eur(row))),
     description=CellParser(lambda row: row["Auftraggeber / Begünstigter"]),
     memo=CellParser(lambda row: row["Verwendungszweck"]),
-    num=CellParser(lambda row: ""),
+    num=ConstantParser(""),
 )
 cc_row_parser = CsvTransactionParser(
     date=CellParser(
@@ -139,8 +150,8 @@ cc_row_parser = CsvTransactionParser(
     withdrawal=CellParser(lambda row: derive_withdrawal(betrag_eur(row))),
     deposit=CellParser(lambda row: at_least_0(betrag_eur(row))),
     description=CellParser(lambda row: row["Beschreibung"]),
-    memo=CellParser(lambda row: ""),
-    num=CellParser(lambda row: ""),
+    memo=ConstantParser(""),
+    num=ConstantParser(""),
 )
 convert_giro = CsvFormat(
     parser=giro_row_parser,
@@ -171,8 +182,8 @@ shinsei_row_parser = CsvTransactionParser(
     withdrawal=CellParser(lambda row: Decimal(row["お支払金額"] or 0)),
     deposit=CellParser(lambda row: Decimal(row["お預り金額"] or 0)),
     description=CellParser(lambda row: row["摘要"]),
-    memo=CellParser(lambda row: ""),
-    num=CellParser(lambda row: ""),
+    memo=ConstantParser(""),
+    num=ConstantParser(""),
 )
 shinsei_en_row_parser = CsvTransactionParser(
     date=CellParser(
@@ -181,16 +192,16 @@ shinsei_en_row_parser = CsvTransactionParser(
     withdrawal=CellParser(lambda row: Decimal(row["CR"] or 0)),
     deposit=CellParser(lambda row: Decimal(row["DR"] or 0)),
     description=CellParser(lambda row: row["Description"]),
-    memo=CellParser(lambda row: ""),
-    num=CellParser(lambda row: ""),
+    memo=ConstantParser(""),
+    num=ConstantParser(""),
 )
 new_shinsei_row_parser = CsvTransactionParser(
     date=CellParser(lambda row: datetime.strptime(row["取引日"], "%Y/%m/%d")),
     withdrawal=CellParser(lambda row: Decimal(row["出金金額"] or 0)),
     deposit=CellParser(lambda row: Decimal(row["入金金額"] or 0)),
     description=CellParser(lambda row: row["摘要"]),
-    memo=CellParser(lambda row: ""),
-    num=CellParser(lambda row: ""),
+    memo=ConstantParser(""),
+    num=ConstantParser(""),
 )
 new_shinsei_en_row_parser = CsvTransactionParser(
     date=CellParser(
@@ -199,8 +210,8 @@ new_shinsei_en_row_parser = CsvTransactionParser(
     withdrawal=CellParser(lambda row: Decimal(row["Debit"] or 0)),
     deposit=CellParser(lambda row: Decimal(row["Credit"] or 0)),
     description=CellParser(lambda row: row["Description"]),
-    memo=CellParser(lambda row: ""),
-    num=CellParser(lambda row: ""),
+    memo=ConstantParser(""),
+    num=ConstantParser(""),
 )
 convert_shinsei = CsvFormat(
     parser=shinsei_row_parser,
@@ -245,16 +256,16 @@ smbc_parser = CsvTransactionParser(
     withdrawal=CellParser(lambda row: -Decimal(row["お引出し"] or 0)),
     deposit=CellParser(lambda row: Decimal(row["お預入れ"] or 0)),
     description=CellParser(lambda row: row["お取り扱い内容"]),
-    memo=CellParser(lambda row: ""),
-    num=CellParser(lambda row: ""),
+    memo=ConstantParser(""),
+    num=ConstantParser(""),
 )
 smbc_new_parser = CsvTransactionParser(
     date=CellParser(lambda row: datetime.strptime(row["年月日"], "%Y/%m/%d")),
     withdrawal=CellParser(lambda row: Decimal(row["お引出し"] or 0)),
     deposit=CellParser(lambda row: Decimal(row["お預入れ"] or 0)),
     description=CellParser(lambda row: row["お取り扱い内容"]),
-    memo=CellParser(lambda row: ""),
-    num=CellParser(lambda row: ""),
+    memo=ConstantParser(""),
+    num=ConstantParser(""),
 )
 convert_smbc = CsvFormat(
     parser=smbc_parser,
@@ -283,8 +294,8 @@ rakuten_parser = CsvTransactionParser(
     withdrawal=CellParser(lambda row: derive_withdrawal(入出金(row))),
     deposit=CellParser(lambda row: at_least_0(入出金(row))),
     description=CellParser(lambda row: row["入出金先内容"]),
-    memo=CellParser(lambda row: ""),
-    num=CellParser(lambda row: ""),
+    memo=ConstantParser(""),
+    num=ConstantParser(""),
 )
 convert_rakuten = CsvFormat(
     parser=rakuten_parser,
@@ -314,6 +325,14 @@ formats: Iterable[CsvFormat] = (
 format_mapping = {format.path: format for format in formats}
 
 
+def apply_parser(row: CsvRow, parser: Parsable[T]) -> T:
+    """Apply a parser."""
+    if isinstance(parser, CellParser):
+        return parser.method(row)
+    elif isinstance(parser, ConstantParser):
+        return parser.value
+
+
 def read_csv(csv_path: str, fmt: CsvFormat) -> List[TransactionDict]:
     """Read a CSV file."""
     with open(csv_path, encoding=fmt.encoding) as fd:
@@ -324,12 +343,12 @@ def read_csv(csv_path: str, fmt: CsvFormat) -> List[TransactionDict]:
     parser = fmt.parser
     transaction_rows: Iterable[Transaction] = (
         Transaction(
-            date=parser.date.method(row),
-            withdrawal=parser.withdrawal.method(row),
-            deposit=parser.deposit.method(row),
-            description=parser.description.method(row),
-            memo=parser.memo.method(row),
-            num=parser.num.method(row),
+            date=apply_parser(row, parser.date),
+            withdrawal=apply_parser(row, parser.withdrawal),
+            deposit=apply_parser(row, parser.deposit),
+            description=apply_parser(row, parser.description),
+            memo=apply_parser(row, parser.memo),
+            num=apply_parser(row, parser.num),
         )
         for row in rows
     )
