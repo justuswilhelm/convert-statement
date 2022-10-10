@@ -12,16 +12,16 @@ Put the files in the in folder so that you will have the following tree:
 
 ```
 test/data/in
-├── dkb_cc_von_bis
+├── dkb_cc_von_bis_v1
 │   └── 2022-10-06
 │       └── transactions.csv
-├── dkb_cc_zeitraum
+├── dkb_cc_zeitraum_v1
 │   └── 2022-10-09
 │       └── transaction.csv
-├── dkb_giro
+├── dkb_giro_v1
 │   └── 2022-10-06
 │       └── transactions.csv
-├── rakuten
+├── rakuten_v1
 │   └── 2022-10-06
 │       └── transactions.csv
 ├── shinsei_v1
@@ -39,10 +39,10 @@ test/data/in
 ├── shinsei_v3
 │   └── 2022-10-06
 │       └── transactions.csv
-├── smbc
+├── smbc_v1
 │   └── 2022-10-06
 │       └── transactions.csv
-└── smbc_new
+└── smbc_v2
     └── 2022-10-06
         └── transactions.csv
 
