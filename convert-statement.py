@@ -27,7 +27,6 @@ from os import (
 )
 from typing import (
     Callable,
-    Dict,
     Iterable,
     List,
     Mapping,
@@ -89,7 +88,7 @@ class Transaction:
 
 def process_one_row(
     row: Transaction, create_negative_row: bool
-) -> Dict[str, str]:
+) -> Mapping[str, str]:
     """Process one row."""
     if create_negative_row:
         is_negative = row.deposit < 0
@@ -111,7 +110,7 @@ def process_one_row(
 def make_ynab(
     rows: List[Transaction],
     create_negative_rows: bool = True,
-) -> List[Dict[str, str]]:
+) -> List[Mapping[str, str]]:
     """Make YNAB compatible dataframe."""
     sub_selection = []
     for row in rows:
