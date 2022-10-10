@@ -284,10 +284,15 @@ convert_smbc_new = CsvFormat(
 
 
 # Rakuten
+def 入出金(row: CsvRow) -> Decimal:
+    """Extract withdrawal / deposit from Rakuten row."""
+    return Decimal(row["入出金(円)"])
+
+
 rakuten_parser = CsvTransactionParser(
     date=CellParser(lambda row: datetime.strptime(row["取引日"], "%Y%m%d")),
-    withdrawal=CellParser(lambda _: Decimal(0)),
-    deposit=CellParser(lambda row: Decimal(row["入出金(円)"])),
+    withdrawal=CellParser(lambda row: derive_withdrawal(入出金(row))),
+    deposit=CellParser(lambda row: at_least_0(入出金(row))),
     description=CellParser(lambda row: row["入出金先内容"]),
     memo=CellParser(lambda row: ""),
     num=CellParser(lambda row: ""),
@@ -297,7 +302,7 @@ convert_rakuten = CsvFormat(
     encoding="shift-jis",
     delimiter=",",
     skip=0,
-    create_negative_rows=True,
+    create_negative_rows=False,
     path="rakuten",
 )
 
