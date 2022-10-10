@@ -89,6 +89,18 @@ class Transaction:
     deposit: Decimal
 
 
+def process_one_row(
+    row: Transaction, create_negative_row: bool
+) -> Dict[str, str]:
+    """Process one row."""
+    sub = asdict(row)
+    if create_negative_row:
+        is_negative = sub["deposit"] < 0
+        sub["withdrawal"] = abs(sub["deposit"]) if is_negative else 0
+        sub["deposit"] = sub["deposit"] if not is_negative else 0
+    return sub
+
+
 def make_ynab(
     rows: List[Transaction],
     create_negative_rows: bool = True,
@@ -96,12 +108,7 @@ def make_ynab(
     """Make YNAB compatible dataframe."""
     sub_selection = []
     for row in rows:
-        sub = asdict(row)
-        if create_negative_rows:
-            is_negative = sub["deposit"] < 0
-            sub["withdrawal"] = abs(sub["deposit"]) if is_negative else 0
-            sub["deposit"] = sub["deposit"] if not is_negative else 0
-        sub_selection.append(sub)
+        sub_selection.append(process_one_row(row, create_negative_rows))
     sub_selection.sort(key=lambda row: str(row["date"]))
     return sub_selection
 
