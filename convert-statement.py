@@ -311,12 +311,10 @@ convert_smbc_new = CsvFormat(
 
 def parse_rakuten_row(row: Dict[str, Any]) -> Transaction:
     """Parse numerical values in a Rakuten data row."""
-    row["取引日"] = datetime.strptime(row["取引日"], "%Y%m%d")
-    row["入出金(円)"] = int(row["入出金(円)"])
     return Transaction(
-        date=row["取引日"],
+        date=datetime.strptime(row["取引日"], "%Y%m%d"),
         withdrawal=Decimal(0),
-        deposit=row["入出金(円)"],
+        deposit=Decimal(row["入出金(円)"]),
         description=row["入出金先内容"],
         memo="",
         num="",
