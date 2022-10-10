@@ -40,6 +40,7 @@ import toml
 
 
 CsvReaderInput = Dict[str, str]
+CsvReaderInputMapping = Mapping[str, str]
 
 
 @dataclass
@@ -309,7 +310,7 @@ convert_smbc_new = CsvFormat(
 )
 
 
-def parse_rakuten_row(row: Dict[str, Any]) -> Transaction:
+def parse_rakuten_row(row: CsvReaderInputMapping) -> Transaction:
     """Parse numerical values in a Rakuten data row."""
     return Transaction(
         date=datetime.strptime(row["取引日"], "%Y%m%d"),
