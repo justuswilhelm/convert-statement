@@ -6,9 +6,7 @@ from decimal import (
 
 def abs_if_negative_else_0(amount: Decimal) -> Decimal:
     """Return the abs of the amount, if it is less than 0, else 0."""
-    if amount < 0:
-        return abs(amount)
-    return Decimal(0)
+    return abs(min(amount, Decimal(0)))
 
 
 def at_least_0(amount: Decimal) -> Decimal:
