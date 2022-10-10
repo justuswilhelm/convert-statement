@@ -314,19 +314,14 @@ formats: Iterable[CsvFormat] = (
 format_mapping = {format.path: format for format in formats}
 
 
-def read_csv(
-    csv_path: str,
-    parser: CsvTransactionParser,
-    encoding: str,
-    delimiter: str,
-    skip: int,
-) -> List[TransactionDict]:
+def read_csv(csv_path: str, fmt: CsvFormat) -> List[TransactionDict]:
     """Read a CSV file."""
-    with open(csv_path, encoding=encoding) as fd:
-        for _ in range(skip):
+    with open(csv_path, encoding=fmt.encoding) as fd:
+        for _ in range(fmt.skip):
             fd.readline()
-        reader = DictReader(fd, delimiter=delimiter)
+        reader = DictReader(fd, delimiter=fmt.delimiter)
         rows = [row for row in reader]
+    parser = fmt.parser
     transaction_rows: Iterable[Transaction] = (
         Transaction(
             date=parser.date.method(row),
@@ -395,13 +390,7 @@ def main(kwargs: Mapping[str, str]) -> None:
             ) from e
         logging.info("Handling file '%s' with %s", csv_path, fmt)
 
-        output = read_csv(
-            csv_path,
-            fmt.parser,
-            encoding=fmt.encoding,
-            delimiter=fmt.delimiter,
-            skip=fmt.skip,
-        )
+        output = read_csv(csv_path, fmt)
 
         out_path = get_output_path(
             csv_path,
