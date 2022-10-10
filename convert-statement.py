@@ -37,6 +37,7 @@ from parser.format import (
     apply_parser,
 )
 from parser.rakuten import (
+    convert_rakuten_jcb_v1,
     convert_rakuten_v1,
 )
 from parser.shinsei import (
@@ -97,6 +98,7 @@ formats: Iterable[CsvFormat] = (
     convert_cc_von_bis_v1,
     convert_cc_zeitraum_v1,
     convert_giro_v1,
+    convert_rakuten_jcb_v1,
     convert_rakuten_v1,
     convert_shinsei_v1,
     convert_shinsei_v1_en,
