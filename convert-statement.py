@@ -217,6 +217,18 @@ def parse_new_shinsei_row(row: CsvReaderInput) -> Transaction:
     )
 
 
+def parse_new_shinsei_en_row(row: CsvReaderInput) -> Transaction:
+    """Parse numerical values in English new Shinsei data."""
+    return Transaction(
+        date=datetime.strptime(row["Value Date"], "%Y/%m/%d"),
+        withdrawal=Decimal(row["Debit"] or 0),
+        deposit=Decimal(row["Credit"] or 0),
+        description=row["Description"],
+        memo="",
+        num="",
+    )
+
+
 def parse_new_shinsei_row_v2(row: CsvReaderInput) -> Transaction:
     """Parse numerical values in new Shinsei v2 data."""
     try:
@@ -267,6 +279,16 @@ convert_shinsei_new = CsvFormat(
     skip=0,
     create_negative_rows=False,
     path="shinsei_new",
+)
+
+
+convert_shinsei_new_en = CsvFormat(
+    parser=SimpleCsvTransactionParser(parse_new_shinsei_en_row),
+    encoding="shift-jis",
+    delimiter=",",
+    skip=0,
+    create_negative_rows=False,
+    path="shinsei_new_en",
 )
 
 
@@ -372,6 +394,7 @@ def get_output_path(file_path: str, in_dir: str, out_dir: str) -> str:
 formats: Iterable[CsvFormat] = (
     # shinsei_new comes before shinsei, on purpose
     convert_shinsei_new_v2,
+    convert_shinsei_new_en,
     convert_shinsei_new,
     convert_shinsei_en,
     convert_shinsei,
