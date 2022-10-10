@@ -140,6 +140,20 @@ def parse_dkb_row(row: Dict[str, Any]) -> Transaction:
     )
 
 
+def parse_cc_row(row: CsvReaderInput) -> Transaction:
+    """Parse dates and numerical values in DKB CC data."""
+    return Transaction(
+        date=datetime.strptime(row["Belegdatum"], "%d.%m.%Y"),
+        withdrawal=Decimal(0),
+        deposit=Decimal(
+            row["Betrag (EUR)"].replace(".", "").replace(",", "."),
+        ),
+        description=row["Beschreibung"],
+        memo="",
+        num="",
+    )
+
+
 convert_giro = CsvFormat(
     parser=SimpleCsvTransactionParser(parse_dkb_row),
     encoding="latin_1",
@@ -151,7 +165,7 @@ convert_giro = CsvFormat(
 
 
 convert_cc_von_bis = CsvFormat(
-    parser=SimpleCsvTransactionParser(parse_dkb_row),
+    parser=SimpleCsvTransactionParser(parse_cc_row),
     delimiter=";",
     encoding="latin_1",
     skip=7,
@@ -161,7 +175,7 @@ convert_cc_von_bis = CsvFormat(
 
 
 convert_cc_zeitraum = CsvFormat(
-    parser=SimpleCsvTransactionParser(parse_dkb_row),
+    parser=SimpleCsvTransactionParser(parse_cc_row),
     delimiter=";",
     encoding="latin_1",
     skip=6,
