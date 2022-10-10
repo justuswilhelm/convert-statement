@@ -126,18 +126,20 @@ def make_ynab(
     )
 
 
-def parse_giro_row(row: CsvRow) -> Transaction:
-    """Parse dates and numerical values in DKB Giro data."""
-    return Transaction(
-        date=datetime.strptime(row["Wertstellung"], "%d.%m.%Y"),
-        withdrawal=Decimal(0),
-        deposit=Decimal(
+giro_row_parser = CsvTransactionParser(
+    date=CellParser(
+        lambda row: datetime.strptime(row["Wertstellung"], "%d.%m.%Y")
+    ),
+    withdrawal=CellParser(lambda row: Decimal(0)),
+    deposit=CellParser(
+        lambda row: Decimal(
             row["Betrag (EUR)"].replace(".", "").replace(",", "."),
-        ),
-        description=row["Auftraggeber / Begünstigter"],
-        memo=row["Verwendungszweck"],
-        num="",
-    )
+        )
+    ),
+    description=CellParser(lambda row: row["Auftraggeber / Begünstigter"]),
+    memo=CellParser(lambda row: row["Verwendungszweck"]),
+    num=CellParser(lambda row: ""),
+)
 
 
 cc_row_parser = CsvTransactionParser(
@@ -157,7 +159,7 @@ cc_row_parser = CsvTransactionParser(
 
 
 convert_giro = CsvFormat(
-    parser=SimpleCsvTransactionParser(parse_giro_row),
+    parser=giro_row_parser,
     encoding="latin_1",
     delimiter=";",
     skip=6,
