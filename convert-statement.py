@@ -57,6 +57,14 @@ class ExtractParser(Generic[T]):
 
 
 @dataclass
+class ExtractDateParser:
+    """Extract a date from a cell in a row."""
+
+    field: str
+    fmt: str
+
+
+@dataclass
 class ConstantParser(Generic[T]):
     """Return a constant value for a csv cell."""
 
@@ -71,13 +79,14 @@ class CellParser(Generic[T]):
 
 
 Parsable = Union[ExtractParser[T], ConstantParser[T], CellParser[T]]
+DateParsable = Union[ExtractDateParser, CellParser[date]]
 
 
 @dataclass
 class CsvTransactionParser:
     """Parse csv rows to transaction attributes."""
 
-    date: Parsable[datetime]
+    date: DateParsable
     num: Parsable[str]
     description: Parsable[str]
     memo: Parsable[str]
@@ -143,9 +152,7 @@ def betrag_eur(row: CsvRow) -> Decimal:
 
 
 giro_row_parser = CsvTransactionParser(
-    date=CellParser(
-        lambda row: datetime.strptime(row["Wertstellung"], "%d.%m.%Y")
-    ),
+    date=ExtractDateParser("Wertstellung", "%d.%m.%Y"),
     withdrawal=CellParser(lambda row: derive_withdrawal(betrag_eur(row))),
     deposit=CellParser(lambda row: at_least_0(betrag_eur(row))),
     description=ExtractParser("Auftraggeber / Begünstigter", str),
@@ -153,9 +160,7 @@ giro_row_parser = CsvTransactionParser(
     num=ConstantParser(""),
 )
 cc_row_parser = CsvTransactionParser(
-    date=CellParser(
-        lambda row: datetime.strptime(row["Belegdatum"], "%d.%m.%Y")
-    ),
+    date=ExtractDateParser("Belegdatum", "%d.%m.%Y"),
     withdrawal=CellParser(lambda row: derive_withdrawal(betrag_eur(row))),
     deposit=CellParser(lambda row: at_least_0(betrag_eur(row))),
     description=ExtractParser("Beschreibung", str),
@@ -187,7 +192,7 @@ convert_cc_zeitraum = CsvFormat(
 
 # Shinsei
 shinsei_row_parser = CsvTransactionParser(
-    date=CellParser(lambda row: datetime.strptime(row["取引日"], "%Y/%m/%d")),
+    date=ExtractDateParser("取引日", "%Y/%m/%d"),
     withdrawal=CellParser(lambda row: Decimal(row["お支払金額"] or 0)),
     deposit=CellParser(lambda row: Decimal(row["お預り金額"] or 0)),
     description=ExtractParser("摘要", str),
@@ -195,9 +200,7 @@ shinsei_row_parser = CsvTransactionParser(
     num=ConstantParser(""),
 )
 shinsei_en_row_parser = CsvTransactionParser(
-    date=CellParser(
-        lambda row: datetime.strptime(row["Value Date"], "%Y/%m/%d")
-    ),
+    date=ExtractDateParser("Value Date", "%Y/%m/%d"),
     withdrawal=CellParser(lambda row: Decimal(row["CR"] or 0)),
     deposit=CellParser(lambda row: Decimal(row["DR"] or 0)),
     description=ExtractParser("Description", str),
@@ -205,7 +208,7 @@ shinsei_en_row_parser = CsvTransactionParser(
     num=ConstantParser(""),
 )
 new_shinsei_row_parser = CsvTransactionParser(
-    date=CellParser(lambda row: datetime.strptime(row["取引日"], "%Y/%m/%d")),
+    date=ExtractDateParser("取引日", "%Y/%m/%d"),
     withdrawal=CellParser(lambda row: Decimal(row["出金金額"] or 0)),
     deposit=CellParser(lambda row: Decimal(row["入金金額"] or 0)),
     description=ExtractParser("摘要", str),
@@ -213,9 +216,7 @@ new_shinsei_row_parser = CsvTransactionParser(
     num=ConstantParser(""),
 )
 new_shinsei_en_row_parser = CsvTransactionParser(
-    date=CellParser(
-        lambda row: datetime.strptime(row["Value Date"], "%Y/%m/%d")
-    ),
+    date=ExtractDateParser("Value Date", "%Y/%m/%d"),
     withdrawal=CellParser(lambda row: Decimal(row["Debit"] or 0)),
     deposit=CellParser(lambda row: Decimal(row["Credit"] or 0)),
     description=ExtractParser("Description", str),
@@ -261,7 +262,7 @@ convert_shinsei_new_v2 = CsvFormat(
 
 # SMBC
 smbc_parser = CsvTransactionParser(
-    date=CellParser(lambda row: datetime.strptime(row["年月日"], "%Y/%m/%d")),
+    date=ExtractDateParser("年月日", "%Y/%m/%d"),
     withdrawal=CellParser(lambda row: -Decimal(row["お引出し"] or 0)),
     deposit=CellParser(lambda row: Decimal(row["お預入れ"] or 0)),
     description=ExtractParser("お取り扱い内容", str),
@@ -269,7 +270,7 @@ smbc_parser = CsvTransactionParser(
     num=ConstantParser(""),
 )
 smbc_new_parser = CsvTransactionParser(
-    date=CellParser(lambda row: datetime.strptime(row["年月日"], "%Y/%m/%d")),
+    date=ExtractDateParser("年月日", "%Y/%m/%d"),
     withdrawal=CellParser(lambda row: Decimal(row["お引出し"] or 0)),
     deposit=CellParser(lambda row: Decimal(row["お預入れ"] or 0)),
     description=ExtractParser("お取り扱い内容", str),
@@ -299,7 +300,7 @@ def 入出金(row: CsvRow) -> Decimal:
 
 
 rakuten_parser = CsvTransactionParser(
-    date=CellParser(lambda row: datetime.strptime(row["取引日"], "%Y%m%d")),
+    date=ExtractDateParser("取引日", "%Y%m%d"),
     withdrawal=CellParser(lambda row: derive_withdrawal(入出金(row))),
     deposit=CellParser(lambda row: at_least_0(入出金(row))),
     description=ExtractParser("入出金先内容", str),
@@ -344,6 +345,17 @@ def apply_parser(row: CsvRow, parser: Parsable[T]) -> T:
         return parser.topython(row[parser.field])
 
 
+def apply_date_parser(row: CsvRow, parser: DateParsable) -> date:
+    """Apply a parser."""
+    if isinstance(parser, CellParser):
+        return parser.method(row)
+    elif isinstance(parser, ExtractDateParser):
+        # If we forget .date() here, mypy will bug out
+        # https://github.com/python/typeshed/issues/4802
+        # https://github.com/python/mypy/issues/9015
+        return datetime.strptime(row[parser.field], parser.fmt).date()
+
+
 def read_csv(csv_path: str, fmt: CsvFormat) -> List[TransactionDict]:
     """Read a CSV file."""
     with open(csv_path, encoding=fmt.encoding) as fd:
@@ -354,7 +366,7 @@ def read_csv(csv_path: str, fmt: CsvFormat) -> List[TransactionDict]:
     parser = fmt.parser
     transaction_rows: Iterable[Transaction] = (
         Transaction(
-            date=apply_parser(row, parser.date).date(),
+            date=apply_date_parser(row, parser.date),
             withdrawal=apply_parser(row, parser.withdrawal),
             deposit=apply_parser(row, parser.deposit),
             description=apply_parser(row, parser.description),
@@ -365,7 +377,7 @@ def read_csv(csv_path: str, fmt: CsvFormat) -> List[TransactionDict]:
     )
     dict_rows: Iterable[TransactionDict] = (
         {
-            "date": str(row.date),
+            "date": row.date.isoformat(),
             "num": row.num,
             "description": row.description,
             "memo": row.memo,
