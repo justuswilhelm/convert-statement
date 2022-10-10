@@ -107,35 +107,16 @@ def make_ynab(
     return sub_selection
 
 
-def parse_dkb_row(row: Dict[str, Any]) -> Transaction:
-    """Parse dates and numerical values in DKB data."""
-    row["Wertstellung"] = datetime.strptime(
-        row["Wertstellung"],
-        "%d.%m.%Y",
-    )
-    if "Belegdatum" in row:
-        row["Belegdatum"] = datetime.strptime(
-            row["Belegdatum"],
-            "%d.%m.%Y",
-        )
-    if "Buchungstag" in row:
-        row["Buchungstag"] = datetime.strptime(
-            row["Buchungstag"],
-            "%d.%m.%Y",
-        )
-    row["Betrag (EUR)"] = Decimal(
-        row["Betrag (EUR)"].replace(".", "").replace(",", ".")
-    )
-    del row[""]
-    description = row.get("Auftraggeber / Begünstigter", None)
-    if description is None:
-        description = row["Beschreibung"]
+def parse_giro_row(row: CsvReaderInput) -> Transaction:
+    """Parse dates and numerical values in DKB Giro data."""
     return Transaction(
-        date=row.get("Belegdatum", None) or row["Wertstellung"],
+        date=datetime.strptime(row["Wertstellung"], "%d.%m.%Y"),
         withdrawal=Decimal(0),
-        deposit=row["Betrag (EUR)"],
-        description=description,
-        memo=row.get("Verwendungszweck", None),
+        deposit=Decimal(
+            row["Betrag (EUR)"].replace(".", "").replace(",", "."),
+        ),
+        description=row["Auftraggeber / Begünstigter"],
+        memo=row["Verwendungszweck"],
         num="",
     )
 
@@ -155,7 +136,7 @@ def parse_cc_row(row: CsvReaderInput) -> Transaction:
 
 
 convert_giro = CsvFormat(
-    parser=SimpleCsvTransactionParser(parse_dkb_row),
+    parser=SimpleCsvTransactionParser(parse_giro_row),
     encoding="latin_1",
     delimiter=";",
     skip=6,
