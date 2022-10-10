@@ -12,8 +12,8 @@ from parser.format import (
     ExtractParser,
 )
 from parser.helper import (
+    abs_if_negative_else_0,
     at_least_0,
-    derive_withdrawal,
 )
 
 
@@ -24,7 +24,7 @@ def 入出金(row: CsvRow) -> Decimal:
 
 rakuten_parser = CsvTransactionParser(
     date=ExtractDateParser("取引日", "%Y%m%d"),
-    withdrawal=CellParser(lambda row: derive_withdrawal(入出金(row))),
+    withdrawal=CellParser(lambda row: abs_if_negative_else_0(入出金(row))),
     deposit=CellParser(lambda row: at_least_0(入出金(row))),
     description=ExtractParser("入出金先内容", str),
     memo=ConstantParser(""),

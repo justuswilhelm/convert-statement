@@ -12,8 +12,8 @@ from parser.format import (
     ExtractParser,
 )
 from parser.helper import (
+    abs_if_negative_else_0,
     at_least_0,
-    derive_withdrawal,
 )
 
 
@@ -24,7 +24,7 @@ def betrag_eur(row: CsvRow) -> Decimal:
 
 giro_row_parser = CsvTransactionParser(
     date=ExtractDateParser("Wertstellung", "%d.%m.%Y"),
-    withdrawal=CellParser(lambda row: derive_withdrawal(betrag_eur(row))),
+    withdrawal=CellParser(lambda row: abs_if_negative_else_0(betrag_eur(row))),
     deposit=CellParser(lambda row: at_least_0(betrag_eur(row))),
     description=ExtractParser("Auftraggeber / Begünstigter", str),
     memo=ExtractParser("Verwendungszweck", str),
@@ -32,7 +32,7 @@ giro_row_parser = CsvTransactionParser(
 )
 cc_row_parser = CsvTransactionParser(
     date=ExtractDateParser("Belegdatum", "%d.%m.%Y"),
-    withdrawal=CellParser(lambda row: derive_withdrawal(betrag_eur(row))),
+    withdrawal=CellParser(lambda row: abs_if_negative_else_0(betrag_eur(row))),
     deposit=CellParser(lambda row: at_least_0(betrag_eur(row))),
     description=ExtractParser("Beschreibung", str),
     memo=ConstantParser(""),
