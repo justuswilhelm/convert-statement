@@ -358,11 +358,15 @@ def apply_date_parser(row: CsvRow, parser: DateParsable) -> date:
 
 def read_csv(csv_path: str, fmt: CsvFormat) -> List[TransactionDict]:
     """Read a CSV file."""
+
+    def sorting_key(row: TransactionDict) -> str:
+        return row["date"]
+
     with open(csv_path, encoding=fmt.encoding) as fd:
         for _ in range(fmt.skip):
             fd.readline()
         reader = DictReader(fd, delimiter=fmt.delimiter)
-        rows = [row for row in reader]
+        rows: List[CsvRow] = [row for row in reader]
     parser = fmt.parser
     transaction_rows: Iterable[Transaction] = (
         Transaction(
@@ -386,7 +390,7 @@ def read_csv(csv_path: str, fmt: CsvFormat) -> List[TransactionDict]:
         }
         for row in transaction_rows
     )
-    return sorted(dict_rows, key=lambda row: row["date"])
+    return sorted(dict_rows, key=sorting_key)
 
 
 def get_output_path(file_path: str, in_dir: str, out_dir: str) -> str:
@@ -447,6 +451,7 @@ if __name__ == "__main__":
     parser = ArgumentParser()
     parser.add_argument("--config", default="config.toml")
     args = parser.parse_args()
-    with open(args.config) as fd:
-        config = toml.load(fd)
+    config_path: str = args.config
+    with open(config_path) as fd:
+        config: Mapping[str, str] = toml.load(fd)
     main(config)
