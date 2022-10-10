@@ -93,18 +93,18 @@ fieldnames: List[str] = [f.name for f in fields(Transaction)]
 
 
 formats: Iterable[CsvFormat] = (
-    # shinsei_new comes before shinsei, on purpose
-    convert_shinsei_new_v2,
-    convert_shinsei_new_en,
-    convert_shinsei_new,
-    convert_shinsei_en,
-    convert_shinsei,
-    convert_cc_zeitraum,
+    # These are sorted alphabetically
     convert_cc_von_bis,
+    convert_cc_zeitraum,
     convert_giro,
     convert_rakuten,
-    convert_smbc_new,
+    convert_shinsei,
+    convert_shinsei_en,
+    convert_shinsei_new,
+    convert_shinsei_new_en,
+    convert_shinsei_new_v2,
     convert_smbc,
+    convert_smbc_new,
 )
 
 
