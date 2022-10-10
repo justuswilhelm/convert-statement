@@ -14,7 +14,6 @@ from dataclasses import (
 )
 from datetime import (
     date,
-    datetime,
 )
 from decimal import (
     Decimal,
@@ -26,83 +25,29 @@ from os import (
     makedirs,
     path,
 )
+from parser.format import (
+    CellParser,
+    ConstantParser,
+    CsvFormat,
+    CsvRow,
+    CsvTransactionParser,
+    ExtractDateParser,
+    ExtractParser,
+    apply_date_parser,
+    apply_parser,
+)
 from typing import (
-    Callable,
-    Generic,
     Iterable,
     List,
     Mapping,
     TypedDict,
-    TypeVar,
-    Union,
 )
 
 import toml
 
 
-T = TypeVar("T")
-CsvRow = Mapping[str, str]
-
-
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
-
-
-@dataclass
-class ExtractParser(Generic[T]):
-    """Extract a field from a cell in a row."""
-
-    field: str
-    topython: Callable[[str], T]
-
-
-@dataclass
-class ExtractDateParser:
-    """Extract a date from a cell in a row."""
-
-    field: str
-    fmt: str
-
-
-@dataclass
-class ConstantParser(Generic[T]):
-    """Return a constant value for a csv cell."""
-
-    value: T
-
-
-@dataclass
-class CellParser(Generic[T]):
-    """Parse a single cell in a csv row."""
-
-    method: Callable[[CsvRow], T]
-
-
-Parsable = Union[ExtractParser[T], ConstantParser[T], CellParser[T]]
-DateParsable = Union[ExtractDateParser, CellParser[date]]
-
-
-@dataclass
-class CsvTransactionParser:
-    """Parse csv rows to transaction attributes."""
-
-    date: DateParsable
-    num: Parsable[str]
-    description: Parsable[str]
-    memo: Parsable[str]
-    withdrawal: Parsable[Decimal]
-    deposit: Parsable[Decimal]
-
-
-@dataclass
-class CsvFormat:
-    """Store format info for a CSV file."""
-
-    parser: CsvTransactionParser
-    encoding: str
-    delimiter: str
-    skip: int
-    path: str
 
 
 @dataclass
@@ -333,27 +278,6 @@ formats: Iterable[CsvFormat] = (
 
 
 format_mapping = {format.path: format for format in formats}
-
-
-def apply_parser(row: CsvRow, parser: Parsable[T]) -> T:
-    """Apply a parser."""
-    if isinstance(parser, CellParser):
-        return parser.method(row)
-    elif isinstance(parser, ConstantParser):
-        return parser.value
-    elif isinstance(parser, ExtractParser):
-        return parser.topython(row[parser.field])
-
-
-def apply_date_parser(row: CsvRow, parser: DateParsable) -> date:
-    """Apply a parser."""
-    if isinstance(parser, CellParser):
-        return parser.method(row)
-    elif isinstance(parser, ExtractDateParser):
-        # If we forget .date() here, mypy will bug out
-        # https://github.com/python/typeshed/issues/4802
-        # https://github.com/python/mypy/issues/9015
-        return datetime.strptime(row[parser.field], parser.fmt).date()
 
 
 def read_csv(csv_path: str, fmt: CsvFormat) -> List[TransactionDict]:
