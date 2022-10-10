@@ -41,6 +41,10 @@ T = TypeVar("T")
 CsvRow = Mapping[str, str]
 
 
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
+
+
 @dataclass
 class CellParser(Generic[T]):
     """Parse a single cell in a csv row."""
@@ -72,10 +76,6 @@ class CsvFormat:
     path: str
 
 
-logging.basicConfig(level=logging.INFO)
-logger = logging.getLogger(__name__)
-
-
 @dataclass
 class Transaction:
     """A singular transaction."""
@@ -88,6 +88,10 @@ class Transaction:
     deposit: Decimal
 
 
+fieldnames: List[str] = [f.name for f in fields(Transaction)]
+
+
+# DKB
 giro_row_parser = CsvTransactionParser(
     date=CellParser(
         lambda row: datetime.strptime(row["Wertstellung"], "%d.%m.%Y")
@@ -102,8 +106,6 @@ giro_row_parser = CsvTransactionParser(
     memo=CellParser(lambda row: row["Verwendungszweck"]),
     num=CellParser(lambda row: ""),
 )
-
-
 cc_row_parser = CsvTransactionParser(
     date=CellParser(
         lambda row: datetime.strptime(row["Belegdatum"], "%d.%m.%Y")
@@ -118,8 +120,6 @@ cc_row_parser = CsvTransactionParser(
     memo=CellParser(lambda row: ""),
     num=CellParser(lambda row: ""),
 )
-
-
 convert_giro = CsvFormat(
     parser=giro_row_parser,
     encoding="latin_1",
@@ -128,8 +128,6 @@ convert_giro = CsvFormat(
     create_negative_rows=True,
     path="dkb_giro",
 )
-
-
 convert_cc_von_bis = CsvFormat(
     parser=cc_row_parser,
     delimiter=";",
@@ -138,8 +136,6 @@ convert_cc_von_bis = CsvFormat(
     create_negative_rows=True,
     path="dkb_cc_von_bis",
 )
-
-
 convert_cc_zeitraum = CsvFormat(
     parser=cc_row_parser,
     delimiter=";",
@@ -150,6 +146,7 @@ convert_cc_zeitraum = CsvFormat(
 )
 
 
+# Shinsei
 shinsei_row_parser = CsvTransactionParser(
     date=CellParser(lambda row: datetime.strptime(row["取引日"], "%Y/%m/%d")),
     withdrawal=CellParser(lambda row: Decimal(row["お支払金額"] or 0)),
@@ -158,8 +155,6 @@ shinsei_row_parser = CsvTransactionParser(
     memo=CellParser(lambda row: ""),
     num=CellParser(lambda row: ""),
 )
-
-
 shinsei_en_row_parser = CsvTransactionParser(
     date=CellParser(
         lambda row: datetime.strptime(row["Value Date"], "%Y/%m/%d")
@@ -170,8 +165,6 @@ shinsei_en_row_parser = CsvTransactionParser(
     memo=CellParser(lambda row: ""),
     num=CellParser(lambda row: ""),
 )
-
-
 new_shinsei_row_parser = CsvTransactionParser(
     date=CellParser(lambda row: datetime.strptime(row["取引日"], "%Y/%m/%d")),
     withdrawal=CellParser(lambda row: Decimal(row["出金金額"] or 0)),
@@ -180,8 +173,6 @@ new_shinsei_row_parser = CsvTransactionParser(
     memo=CellParser(lambda row: ""),
     num=CellParser(lambda row: ""),
 )
-
-
 new_shinsei_en_row_parser = CsvTransactionParser(
     date=CellParser(
         lambda row: datetime.strptime(row["Value Date"], "%Y/%m/%d")
@@ -192,8 +183,6 @@ new_shinsei_en_row_parser = CsvTransactionParser(
     memo=CellParser(lambda row: ""),
     num=CellParser(lambda row: ""),
 )
-
-
 convert_shinsei = CsvFormat(
     parser=shinsei_row_parser,
     encoding="utf-16",
@@ -202,8 +191,6 @@ convert_shinsei = CsvFormat(
     create_negative_rows=False,
     path="shinsei",
 )
-
-
 convert_shinsei_en = CsvFormat(
     parser=shinsei_en_row_parser,
     encoding="utf-16",
@@ -212,8 +199,6 @@ convert_shinsei_en = CsvFormat(
     create_negative_rows=False,
     path="shinsei_en",
 )
-
-
 convert_shinsei_new = CsvFormat(
     parser=new_shinsei_row_parser,
     encoding="shift-jis",
@@ -222,8 +207,6 @@ convert_shinsei_new = CsvFormat(
     create_negative_rows=False,
     path="shinsei_new",
 )
-
-
 convert_shinsei_new_en = CsvFormat(
     parser=new_shinsei_en_row_parser,
     encoding="shift-jis",
@@ -232,8 +215,6 @@ convert_shinsei_new_en = CsvFormat(
     create_negative_rows=False,
     path="shinsei_new_en",
 )
-
-
 convert_shinsei_new_v2 = CsvFormat(
     parser=new_shinsei_row_parser,
     encoding="utf-8-sig",
@@ -244,6 +225,7 @@ convert_shinsei_new_v2 = CsvFormat(
 )
 
 
+# SMBC
 smbc_parser = CsvTransactionParser(
     date=CellParser(lambda row: datetime.strptime(row["年月日"], "%Y/%m/%d")),
     withdrawal=CellParser(lambda row: -Decimal(row["お引出し"] or 0)),
@@ -252,8 +234,6 @@ smbc_parser = CsvTransactionParser(
     memo=CellParser(lambda row: ""),
     num=CellParser(lambda row: ""),
 )
-
-
 smbc_new_parser = CsvTransactionParser(
     date=CellParser(lambda row: datetime.strptime(row["年月日"], "%Y/%m/%d")),
     withdrawal=CellParser(lambda row: Decimal(row["お引出し"] or 0)),
@@ -262,8 +242,6 @@ smbc_new_parser = CsvTransactionParser(
     memo=CellParser(lambda row: ""),
     num=CellParser(lambda row: ""),
 )
-
-
 convert_smbc = CsvFormat(
     parser=smbc_parser,
     encoding="shift-jis",
@@ -272,8 +250,6 @@ convert_smbc = CsvFormat(
     create_negative_rows=False,
     path="smbc",
 )
-
-
 convert_smbc_new = CsvFormat(
     parser=smbc_new_parser,
     encoding="shift-jis",
@@ -284,6 +260,7 @@ convert_smbc_new = CsvFormat(
 )
 
 
+# Rakuten
 rakuten_parser = CsvTransactionParser(
     date=CellParser(lambda row: datetime.strptime(row["取引日"], "%Y%m%d")),
     withdrawal=CellParser(lambda _: Decimal(0)),
@@ -292,8 +269,6 @@ rakuten_parser = CsvTransactionParser(
     memo=CellParser(lambda row: ""),
     num=CellParser(lambda row: ""),
 )
-
-
 convert_rakuten = CsvFormat(
     parser=rakuten_parser,
     encoding="shift-jis",
@@ -301,6 +276,22 @@ convert_rakuten = CsvFormat(
     skip=0,
     create_negative_rows=True,
     path="rakuten",
+)
+
+
+formats: Iterable[CsvFormat] = (
+    # shinsei_new comes before shinsei, on purpose
+    convert_shinsei_new_v2,
+    convert_shinsei_new_en,
+    convert_shinsei_new,
+    convert_shinsei_en,
+    convert_shinsei,
+    convert_cc_zeitraum,
+    convert_cc_von_bis,
+    convert_giro,
+    convert_rakuten,
+    convert_smbc_new,
+    convert_smbc,
 )
 
 
@@ -361,25 +352,6 @@ def get_output_path(file_path: str, in_dir: str, out_dir: str) -> str:
         out_dir,
         path.relpath(file_path, in_dir),
     )
-
-
-formats: Iterable[CsvFormat] = (
-    # shinsei_new comes before shinsei, on purpose
-    convert_shinsei_new_v2,
-    convert_shinsei_new_en,
-    convert_shinsei_new,
-    convert_shinsei_en,
-    convert_shinsei,
-    convert_cc_zeitraum,
-    convert_cc_von_bis,
-    convert_giro,
-    convert_rakuten,
-    convert_smbc_new,
-    convert_smbc,
-)
-
-
-fieldnames: List[str] = [f.name for f in fields(Transaction)]
 
 
 def write_csv(out_path: str, output: List[CsvRow]) -> None:
