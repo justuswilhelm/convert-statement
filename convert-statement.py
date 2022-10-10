@@ -306,16 +306,14 @@ def parse_smbc_row(row: CsvRow) -> Transaction:
     )
 
 
-def parse_new_smbc_row(row: CsvRow) -> Transaction:
-    """Parse numerical values in a SMBC data row."""
-    return Transaction(
-        date=datetime.strptime(row["年月日"], "%Y/%m/%d"),
-        withdrawal=Decimal(row["お引出し"] or 0),
-        deposit=Decimal(row["お預入れ"] or 0),
-        description=row["お取り扱い内容"],
-        memo="",
-        num="",
-    )
+smbc_new_parser = CsvTransactionParser(
+    date=CellParser(lambda row: datetime.strptime(row["年月日"], "%Y/%m/%d")),
+    withdrawal=CellParser(lambda row: Decimal(row["お引出し"] or 0)),
+    deposit=CellParser(lambda row: Decimal(row["お預入れ"] or 0)),
+    description=CellParser(lambda row: row["お取り扱い内容"]),
+    memo=CellParser(lambda row: ""),
+    num=CellParser(lambda row: ""),
+)
 
 
 convert_smbc = CsvFormat(
@@ -329,7 +327,7 @@ convert_smbc = CsvFormat(
 
 
 convert_smbc_new = CsvFormat(
-    parser=SimpleCsvTransactionParser(parse_new_smbc_row),
+    parser=smbc_new_parser,
     encoding="shift-jis",
     delimiter=",",
     skip=0,
