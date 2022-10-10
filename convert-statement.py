@@ -36,17 +36,17 @@ from typing import (
 import toml
 
 
-CsvReaderInput = Mapping[str, str]
+CsvRow = Mapping[str, str]
 
 
 @dataclass
 class CsvTransactionParser:
     """Parse csv rows to transaction attributes."""
 
-    date: Callable[[CsvReaderInput], datetime]
-    num: Callable[[CsvReaderInput], str]
-    description: Callable[[CsvReaderInput], str]
-    memo: Callable[[CsvReaderInput], str]
+    date: Callable[[CsvRow], datetime]
+    num: Callable[[CsvRow], str]
+    description: Callable[[CsvRow], str]
+    memo: Callable[[CsvRow], str]
     withdrawal: Callable[[Decimal], str]
     deposit: Callable[[Decimal], str]
 
@@ -55,7 +55,7 @@ class CsvTransactionParser:
 class SimpleCsvTransactionParser:
     """Parse csv rows to transaction attributes, legacy."""
 
-    method: Callable[[CsvReaderInput], "Transaction"]
+    method: Callable[[CsvRow], "Transaction"]
 
 
 @dataclass
@@ -86,9 +86,7 @@ class Transaction:
     deposit: Decimal
 
 
-def process_one_row(
-    row: Transaction, create_negative_row: bool
-) -> Mapping[str, str]:
+def process_one_row(row: Transaction, create_negative_row: bool) -> CsvRow:
     """Process one row."""
     if create_negative_row:
         is_negative = row.deposit < 0
@@ -110,7 +108,7 @@ def process_one_row(
 def make_ynab(
     rows: List[Transaction],
     create_negative_rows: bool = True,
-) -> List[Mapping[str, str]]:
+) -> List[CsvRow]:
     """Make YNAB compatible dataframe."""
     sub_selection = []
     for row in rows:
@@ -119,7 +117,7 @@ def make_ynab(
     return sub_selection
 
 
-def parse_giro_row(row: CsvReaderInput) -> Transaction:
+def parse_giro_row(row: CsvRow) -> Transaction:
     """Parse dates and numerical values in DKB Giro data."""
     return Transaction(
         date=datetime.strptime(row["Wertstellung"], "%d.%m.%Y"),
@@ -133,7 +131,7 @@ def parse_giro_row(row: CsvReaderInput) -> Transaction:
     )
 
 
-def parse_cc_row(row: CsvReaderInput) -> Transaction:
+def parse_cc_row(row: CsvRow) -> Transaction:
     """Parse dates and numerical values in DKB CC data."""
     return Transaction(
         date=datetime.strptime(row["Belegdatum"], "%d.%m.%Y"),
@@ -177,7 +175,7 @@ convert_cc_zeitraum = CsvFormat(
 )
 
 
-def parse_shinsei_row(row: CsvReaderInput) -> Transaction:
+def parse_shinsei_row(row: CsvRow) -> Transaction:
     """Parse numerical values in Japanese Shinsei data."""
     return Transaction(
         date=datetime.strptime(row["取引日"], "%Y/%m/%d"),
@@ -189,7 +187,7 @@ def parse_shinsei_row(row: CsvReaderInput) -> Transaction:
     )
 
 
-def parse_shinsei_en_row(row: CsvReaderInput) -> Transaction:
+def parse_shinsei_en_row(row: CsvRow) -> Transaction:
     """Parse numerical values in English Shinsei data."""
     return Transaction(
         date=datetime.strptime(row["Value Date"], "%Y/%m/%d"),
@@ -201,7 +199,7 @@ def parse_shinsei_en_row(row: CsvReaderInput) -> Transaction:
     )
 
 
-def parse_new_shinsei_row(row: CsvReaderInput) -> Transaction:
+def parse_new_shinsei_row(row: CsvRow) -> Transaction:
     """Parse numerical values in Japanese new Shinsei data."""
     return Transaction(
         date=datetime.strptime(row["取引日"], "%Y/%m/%d"),
@@ -213,7 +211,7 @@ def parse_new_shinsei_row(row: CsvReaderInput) -> Transaction:
     )
 
 
-def parse_new_shinsei_en_row(row: CsvReaderInput) -> Transaction:
+def parse_new_shinsei_en_row(row: CsvRow) -> Transaction:
     """Parse numerical values in English new Shinsei data."""
     return Transaction(
         date=datetime.strptime(row["Value Date"], "%Y/%m/%d"),
@@ -225,7 +223,7 @@ def parse_new_shinsei_en_row(row: CsvReaderInput) -> Transaction:
     )
 
 
-def parse_new_shinsei_row_v2(row: CsvReaderInput) -> Transaction:
+def parse_new_shinsei_row_v2(row: CsvRow) -> Transaction:
     """Parse numerical values in Japanese new Shinsei v2 data."""
     return Transaction(
         date=datetime.strptime(row["取引日"], "%Y/%m/%d"),
@@ -287,7 +285,7 @@ convert_shinsei_new_v2 = CsvFormat(
 )
 
 
-def parse_smbc_row(row: CsvReaderInput) -> Transaction:
+def parse_smbc_row(row: CsvRow) -> Transaction:
     """Parse numerical values in a SMBC data row."""
     return Transaction(
         date=datetime.strptime(row["年月日"], "%Y/%m/%d"),
@@ -299,7 +297,7 @@ def parse_smbc_row(row: CsvReaderInput) -> Transaction:
     )
 
 
-def parse_new_smbc_row(row: CsvReaderInput) -> Transaction:
+def parse_new_smbc_row(row: CsvRow) -> Transaction:
     """Parse numerical values in a SMBC data row."""
     return Transaction(
         date=datetime.strptime(row["年月日"], "%Y/%m/%d"),
@@ -331,7 +329,7 @@ convert_smbc_new = CsvFormat(
 )
 
 
-def parse_rakuten_row(row: CsvReaderInput) -> Transaction:
+def parse_rakuten_row(row: CsvRow) -> Transaction:
     """Parse numerical values in a Rakuten data row."""
     return Transaction(
         date=datetime.strptime(row["取引日"], "%Y%m%d"),
