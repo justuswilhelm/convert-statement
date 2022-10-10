@@ -110,11 +110,10 @@ def make_ynab(
     create_negative_rows: bool = True,
 ) -> List[CsvRow]:
     """Make YNAB compatible dataframe."""
-    sub_selection = []
-    for row in rows:
-        sub_selection.append(process_one_row(row, create_negative_rows))
-    sub_selection.sort(key=lambda row: str(row["date"]))
-    return sub_selection
+    return sorted(
+        (process_one_row(r, create_negative_rows) for r in rows),
+        key=lambda row: row["date"],
+    )
 
 
 def parse_giro_row(row: CsvRow) -> Transaction:
