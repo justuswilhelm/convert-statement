@@ -27,7 +27,6 @@ from os import (
     path,
 )
 from typing import (
-    Any,
     Callable,
     Dict,
     Iterable,
@@ -104,7 +103,7 @@ def process_one_row(
 def make_ynab(
     rows: List[Transaction],
     create_negative_rows: bool = True,
-) -> List[Dict[str, Any]]:
+) -> List[Dict[str, str]]:
     """Make YNAB compatible dataframe."""
     sub_selection = []
     for row in rows:
