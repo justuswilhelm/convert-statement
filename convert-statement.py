@@ -9,7 +9,6 @@ from csv import (
     DictWriter,
 )
 from dataclasses import (
-    asdict,
     dataclass,
     fields,
 )
@@ -92,12 +91,21 @@ def process_one_row(
     row: Transaction, create_negative_row: bool
 ) -> Dict[str, str]:
     """Process one row."""
-    sub = asdict(row)
     if create_negative_row:
-        is_negative = sub["deposit"] < 0
-        sub["withdrawal"] = abs(sub["deposit"]) if is_negative else 0
-        sub["deposit"] = sub["deposit"] if not is_negative else 0
-    return sub
+        is_negative = row.deposit < 0
+        withdrawal = abs(row.deposit) if is_negative else 0
+        deposit = row.deposit if not is_negative else 0
+    else:
+        withdrawal = row.withdrawal
+        deposit = row.deposit
+    return {
+        "date": str(row.date),
+        "num": row.num,
+        "description": row.description,
+        "memo": row.memo,
+        "withdrawal": str(withdrawal),
+        "deposit": str(deposit),
+    }
 
 
 def make_ynab(
