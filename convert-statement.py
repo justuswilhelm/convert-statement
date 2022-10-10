@@ -31,6 +31,7 @@ from typing import (
     Iterable,
     List,
     Mapping,
+    TypedDict,
     TypeVar,
 )
 
@@ -86,6 +87,19 @@ class Transaction:
     memo: str
     withdrawal: Decimal
     deposit: Decimal
+
+
+TransactionDict = TypedDict(
+    "TransactionDict",
+    {
+        "date": str,
+        "num": str,
+        "description": str,
+        "memo": str,
+        "withdrawal": str,
+        "deposit": str,
+    },
+)
 
 
 fieldnames: List[str] = [f.name for f in fields(Transaction)]
@@ -307,7 +321,9 @@ def apply_parser(parser: CsvTransactionParser, row: CsvRow) -> Transaction:
     )
 
 
-def process_one_row(row: Transaction, create_negative_row: bool) -> CsvRow:
+def process_one_row(
+    row: Transaction, create_negative_row: bool
+) -> TransactionDict:
     """Process one row."""
     if create_negative_row:
         is_negative = row.deposit < 0
@@ -333,7 +349,7 @@ def read_csv(
     delimiter: str,
     skip: int,
     create_negative_rows: bool = True,
-) -> List[CsvRow]:
+) -> List[TransactionDict]:
     """Read a CSV file."""
     with open(csv_path, encoding=encoding) as fd:
         for _ in range(skip):
@@ -354,7 +370,7 @@ def get_output_path(file_path: str, in_dir: str, out_dir: str) -> str:
     )
 
 
-def write_csv(out_path: str, output: List[CsvRow]) -> None:
+def write_csv(out_path: str, output: List[TransactionDict]) -> None:
     """
     Write rows to a csv.
 
