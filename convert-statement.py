@@ -25,6 +25,11 @@ from os import (
     makedirs,
     path,
 )
+from parser.dkb import (
+    convert_cc_von_bis,
+    convert_cc_zeitraum,
+    convert_giro,
+)
 from parser.format import (
     CellParser,
     ConstantParser,
@@ -35,6 +40,10 @@ from parser.format import (
     ExtractParser,
     apply_date_parser,
     apply_parser,
+)
+from parser.helper import (
+    at_least_0,
+    derive_withdrawal,
 )
 from parser.shinsei import (
     convert_shinsei,
@@ -83,63 +92,6 @@ TransactionDict = TypedDict(
 
 
 fieldnames: List[str] = [f.name for f in fields(Transaction)]
-
-
-def derive_withdrawal(withdrawal: Decimal) -> Decimal:
-    """Derive withdrawal values for when deposit is negative."""
-    if withdrawal < 0:
-        return abs(withdrawal)
-    return Decimal(0)
-
-
-def at_least_0(amount: Decimal) -> Decimal:
-    """Make sure this value is at least 0."""
-    return max(amount, Decimal(0))
-
-
-# DKB
-def betrag_eur(row: CsvRow) -> Decimal:
-    """Extract Betrag (EUR)."""
-    return Decimal(row["Betrag (EUR)"].replace(".", "").replace(",", "."))
-
-
-giro_row_parser = CsvTransactionParser(
-    date=ExtractDateParser("Wertstellung", "%d.%m.%Y"),
-    withdrawal=CellParser(lambda row: derive_withdrawal(betrag_eur(row))),
-    deposit=CellParser(lambda row: at_least_0(betrag_eur(row))),
-    description=ExtractParser("Auftraggeber / Begünstigter", str),
-    memo=ExtractParser("Verwendungszweck", str),
-    num=ConstantParser(""),
-)
-cc_row_parser = CsvTransactionParser(
-    date=ExtractDateParser("Belegdatum", "%d.%m.%Y"),
-    withdrawal=CellParser(lambda row: derive_withdrawal(betrag_eur(row))),
-    deposit=CellParser(lambda row: at_least_0(betrag_eur(row))),
-    description=ExtractParser("Beschreibung", str),
-    memo=ConstantParser(""),
-    num=ConstantParser(""),
-)
-convert_giro = CsvFormat(
-    parser=giro_row_parser,
-    encoding="latin_1",
-    delimiter=";",
-    skip=6,
-    path="dkb_giro",
-)
-convert_cc_von_bis = CsvFormat(
-    parser=cc_row_parser,
-    delimiter=";",
-    encoding="latin_1",
-    skip=7,
-    path="dkb_cc_von_bis",
-)
-convert_cc_zeitraum = CsvFormat(
-    parser=cc_row_parser,
-    delimiter=";",
-    encoding="latin_1",
-    skip=6,
-    path="dkb_cc_zeitraum",
-)
 
 
 # SMBC
