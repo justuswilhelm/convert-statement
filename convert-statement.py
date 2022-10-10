@@ -382,18 +382,6 @@ formats: Iterable[CsvFormat] = (
 fieldnames: List[str] = [f.name for f in fields(Transaction)]
 
 
-def process_csv(csv_path: str, fmt: CsvFormat) -> List[CsvRow]:
-    """Process one CSV and return csv rows."""
-    return read_csv(
-        csv_path,
-        fmt.parser,
-        encoding=fmt.encoding,
-        delimiter=fmt.delimiter,
-        skip=fmt.skip,
-        create_negative_rows=fmt.create_negative_rows,
-    )
-
-
 def write_csv(out_path: str, output: List[CsvRow]) -> None:
     """
     Write rows to a csv.
@@ -422,7 +410,14 @@ def main(kwargs: Mapping[str, str]) -> None:
             raise ValueError("Unknown format for file '{}'".format(csv_path))
         logging.info("Handling file '%s' with %s", csv_path, fmt)
 
-        output = process_csv(csv_path, fmt)
+        output = read_csv(
+            csv_path,
+            fmt.parser,
+            encoding=fmt.encoding,
+            delimiter=fmt.delimiter,
+            skip=fmt.skip,
+            create_negative_rows=fmt.create_negative_rows,
+        )
 
         out_path = get_output_path(
             csv_path,
