@@ -32,7 +32,6 @@ from typing import (
     List,
     Mapping,
     TypeVar,
-    Union,
 )
 
 import toml
@@ -62,17 +61,10 @@ class CsvTransactionParser:
 
 
 @dataclass
-class SimpleCsvTransactionParser:
-    """Parse csv rows to transaction attributes, legacy."""
-
-    method: Callable[[CsvRow], "Transaction"]
-
-
-@dataclass
 class CsvFormat:
     """Store format info for a CSV file."""
 
-    parser: Union[CsvTransactionParser, SimpleCsvTransactionParser]
+    parser: CsvTransactionParser
     encoding: str
     delimiter: str
     skip: int
@@ -352,21 +344,6 @@ convert_rakuten = CsvFormat(
 )
 
 
-def read_csv(
-    csv_path: str,
-    simple_parser: SimpleCsvTransactionParser,
-    encoding: str,
-    delimiter: str,
-    skip: int,
-) -> List[Transaction]:
-    """Read a CSV file."""
-    with open(csv_path, encoding=encoding) as fd:
-        for _ in range(skip):
-            fd.readline()
-        reader = DictReader(fd, delimiter=delimiter)
-        return list(map(simple_parser.method, reader))
-
-
 def apply_parser(parser: CsvTransactionParser, row: CsvRow) -> Transaction:
     """Apply a parser to a CSV row."""
     return Transaction(
@@ -379,7 +356,7 @@ def apply_parser(parser: CsvTransactionParser, row: CsvRow) -> Transaction:
     )
 
 
-def read_csv_new(
+def read_csv(
     csv_path: str,
     parser: CsvTransactionParser,
     encoding: str,
@@ -431,22 +408,13 @@ def main(kwargs: Mapping[str, str]) -> None:
             raise ValueError("Unknown format for file '{}'".format(csv_path))
         logging.info("Handling file '%s' with %s", csv_path, fmt)
 
-        if isinstance(fmt.parser, SimpleCsvTransactionParser):
-            rows = read_csv(
-                csv_path,
-                fmt.parser,
-                encoding=fmt.encoding,
-                delimiter=fmt.delimiter,
-                skip=fmt.skip,
-            )
-        else:
-            rows = read_csv_new(
-                csv_path,
-                fmt.parser,
-                encoding=fmt.encoding,
-                delimiter=fmt.delimiter,
-                skip=fmt.skip,
-            )
+        rows = read_csv(
+            csv_path,
+            fmt.parser,
+            encoding=fmt.encoding,
+            delimiter=fmt.delimiter,
+            skip=fmt.skip,
+        )
         output = make_ynab(
             rows,
             create_negative_rows=fmt.create_negative_rows,
