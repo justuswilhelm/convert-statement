@@ -40,11 +40,11 @@ from parser.rakuten import (
     convert_rakuten,
 )
 from parser.shinsei import (
-    convert_shinsei,
-    convert_shinsei_en,
-    convert_shinsei_new,
-    convert_shinsei_new_en,
-    convert_shinsei_new_v2,
+    convert_shinsei_v1,
+    convert_shinsei_v1_en,
+    convert_shinsei_v2,
+    convert_shinsei_v2_en,
+    convert_shinsei_v3,
 )
 from parser.smbc import (
     convert_smbc,
@@ -98,11 +98,11 @@ formats: Iterable[CsvFormat] = (
     convert_cc_zeitraum,
     convert_giro,
     convert_rakuten,
-    convert_shinsei,
-    convert_shinsei_en,
-    convert_shinsei_new,
-    convert_shinsei_new_en,
-    convert_shinsei_new_v2,
+    convert_shinsei_v1,
+    convert_shinsei_v1_en,
+    convert_shinsei_v2,
+    convert_shinsei_v2_en,
+    convert_shinsei_v3,
     convert_smbc,
     convert_smbc_new,
 )

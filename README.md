@@ -11,31 +11,48 @@ out_dir = "OUT_DIR"
 Put the files in the in folder so that you will have the following tree:
 
 ```
-./in
-├── dkb_cc
-│   └── 2022-10-06
-│       └── transactions.csv
+test/data/in
+├── dkb_cc_von_bis
+│   └── 2022-10-06
+│       └── transactions.csv
+├── dkb_cc_zeitraum
+│   └── 2022-10-09
+│       └── transaction.csv
 ├── dkb_giro
-│   └── 2022-10-06
-│       └── transactions.csv
+│   └── 2022-10-06
+│       └── transactions.csv
 ├── rakuten
-│   └── 2022-10-06
-│       └── transactions.csv
-├── shinsei
-│   └── 2022-10-06
-│       └── transactions.csv
-├── shinsei_new
-│   └── 2022-10-06
-│       └── transactions.csv
-├── shinsei_new_v2
-│   └── 2022-10-06
-│       └── transactions.csv
+│   └── 2022-10-06
+│       └── transactions.csv
+├── shinsei_v1
+│   └── 2022-10-06
+│       └── transactions.csv
+├── shinsei_v1_en
+│   └── 2022-10-10
+│       └── transactions.csv
+├── shinsei_v2
+│   └── 2022-10-06
+│       └── transactions.csv
+├── shinsei_v2_en
+│   └── 2022-10-10
+│       └── transactions.csv
+├── shinsei_v3
+│   └── 2022-10-06
+│       └── transactions.csv
 ├── smbc
-│   └── 2022-10-06
-│       └── transactions.csv
+│   └── 2022-10-06
+│       └── transactions.csv
 └── smbc_new
     └── 2022-10-06
         └── transactions.csv
+
+22 directories, 11 files
+```
+
+Regenerate this by running
+
+```sh
+tree test/data/in | pbcopy  # in macOS
 ```
 
 Then run

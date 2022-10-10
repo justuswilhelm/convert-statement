@@ -44,38 +44,38 @@ new_shinsei_en_row_parser = CsvTransactionParser(
     memo=ConstantParser(""),
     num=ConstantParser(""),
 )
-convert_shinsei = CsvFormat(
+convert_shinsei_v1 = CsvFormat(
     parser=shinsei_row_parser,
     encoding="utf-16",
     delimiter="\t",
     skip=8,
-    path="shinsei",
+    path="shinsei_v1",
 )
-convert_shinsei_en = CsvFormat(
+convert_shinsei_v1_en = CsvFormat(
     parser=shinsei_en_row_parser,
     encoding="utf-16",
     delimiter="\t",
     skip=8,
-    path="shinsei_en",
+    path="shinsei_v1_en",
 )
-convert_shinsei_new = CsvFormat(
+convert_shinsei_v2 = CsvFormat(
     parser=new_shinsei_row_parser,
     encoding="shift-jis",
     delimiter=",",
     skip=0,
-    path="shinsei_new",
+    path="shinsei_v2",
 )
-convert_shinsei_new_en = CsvFormat(
+convert_shinsei_v2_en = CsvFormat(
     parser=new_shinsei_en_row_parser,
     encoding="shift-jis",
     delimiter=",",
     skip=0,
-    path="shinsei_new_en",
+    path="shinsei_v2_en",
 )
-convert_shinsei_new_v2 = CsvFormat(
+convert_shinsei_v3 = CsvFormat(
     parser=new_shinsei_row_parser,
     encoding="utf-8-sig",
     delimiter=",",
     skip=0,
-    path="shinsei_new_v2",
+    path="shinsei_v3",
 )
