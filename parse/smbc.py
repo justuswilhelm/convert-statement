@@ -2,7 +2,8 @@
 from decimal import (
     Decimal,
 )
-from parser.format import (
+
+from parse.format import (
     CellParser,
     ConstantParser,
     CsvFormat,
