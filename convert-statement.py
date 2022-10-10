@@ -26,9 +26,9 @@ from os import (
     path,
 )
 from parser.dkb import (
-    convert_cc_von_bis,
-    convert_cc_zeitraum,
-    convert_giro,
+    convert_cc_von_bis_v1,
+    convert_cc_zeitraum_v1,
+    convert_giro_v1,
 )
 from parser.format import (
     CsvFormat,
@@ -94,9 +94,9 @@ fieldnames: List[str] = [f.name for f in fields(Transaction)]
 
 formats: Iterable[CsvFormat] = (
     # These are sorted alphabetically
-    convert_cc_von_bis,
-    convert_cc_zeitraum,
-    convert_giro,
+    convert_cc_von_bis_v1,
+    convert_cc_zeitraum_v1,
+    convert_giro_v1,
     convert_rakuten_v1,
     convert_shinsei_v1,
     convert_shinsei_v1_en,

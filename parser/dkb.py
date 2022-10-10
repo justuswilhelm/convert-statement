@@ -38,24 +38,24 @@ cc_row_parser = CsvTransactionParser(
     memo=ConstantParser(""),
     num=ConstantParser(""),
 )
-convert_giro = CsvFormat(
+convert_giro_v1 = CsvFormat(
     parser=giro_row_parser,
     encoding="latin_1",
     delimiter=";",
     skip=6,
-    path="dkb_giro",
+    path="dkb_giro_v1",
 )
-convert_cc_von_bis = CsvFormat(
+convert_cc_von_bis_v1 = CsvFormat(
     parser=cc_row_parser,
     delimiter=";",
     encoding="latin_1",
     skip=7,
-    path="dkb_cc_von_bis",
+    path="dkb_cc_von_bis_v1",
 )
-convert_cc_zeitraum = CsvFormat(
+convert_cc_zeitraum_v1 = CsvFormat(
     parser=cc_row_parser,
     delimiter=";",
     encoding="latin_1",
     skip=6,
-    path="dkb_cc_zeitraum",
+    path="dkb_cc_zeitraum_v1",
 )
