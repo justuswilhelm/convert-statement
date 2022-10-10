@@ -4,10 +4,10 @@ from decimal import (
 )
 
 
-def derive_withdrawal(withdrawal: Decimal) -> Decimal:
-    """Derive withdrawal values for when deposit is negative."""
-    if withdrawal < 0:
-        return abs(withdrawal)
+def abs_if_negative_else_0(amount: Decimal) -> Decimal:
+    """Return the abs of the amount, if it is less than 0, else 0."""
+    if amount < 0:
+        return abs(amount)
     return Decimal(0)
 
 
