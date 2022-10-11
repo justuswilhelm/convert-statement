@@ -1,6 +1,4 @@
 version: 2.1
-orbs:
-  cli: circleci/circleci-cli@0.1.9
 executors:
   python:
     docker:
