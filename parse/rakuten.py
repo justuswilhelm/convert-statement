@@ -1,4 +1,5 @@
 """Contain the SMBC parsers."""
+import re
 from decimal import (
     Decimal,
 )
@@ -18,6 +19,13 @@ from parse.helper import (
 )
 
 
+JCB_RE = re.compile(
+    r"(?P<description>JCBデビット) "
+    r"(?P<mode>[A|B])(?P<number>\d{7}) "
+    r"(?P<reference>\d{16})$"
+)
+
+
 def 入出金(row: CsvRow) -> Decimal:
     """Extract withdrawal / deposit from Rakuten row."""
     return Decimal(row["入出金(円)"])
@@ -26,6 +34,25 @@ def 入出金(row: CsvRow) -> Decimal:
 def ご利用金額(row: CsvRow) -> Decimal:
     """Extract withdrawal / deposit from Rakuten JCB row."""
     return Decimal(row["ご利用金額（円）"])
+
+
+def try_jcb(row: CsvRow, return_number: bool) -> str:
+    """Try extracting a JCB verification number and description."""
+    description = row["入出金先内容"]
+    m = JCB_RE.match(description)
+    if m:
+        if return_number:
+            return m.group("number")
+        else:
+            description = m.group("description")
+            mode = m.group("mode")
+            reference = m.group("reference")
+            return f"{description} {mode} {reference}"
+    else:
+        if return_number:
+            return ""
+        else:
+            return description
 
 
 def extract_conversion_info(row: CsvRow) -> str:
@@ -43,9 +70,9 @@ rakuten_parser = CsvTransactionParser(
     date=ExtractDateParser("取引日", "%Y%m%d"),
     withdrawal=CellParser(lambda row: abs_if_negative_else_0(入出金(row))),
     deposit=CellParser(lambda row: at_least_0(入出金(row))),
-    description=ExtractParser("入出金先内容", str),
+    description=CellParser(lambda row: try_jcb(row, return_number=False)),
     memo=ConstantParser(""),
-    num=ConstantParser(""),
+    num=CellParser(lambda row: try_jcb(row, return_number=True)),
 )
 
 
